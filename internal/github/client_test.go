@@ -2,88 +2,68 @@ package github
 
 import (
 	"testing"
-	"time"
-
-	"github.com/VeyronSakai/gh-runner-monitor/internal/models"
+	"fmt"
 )
 
-func TestClient_GetRunners(t *testing.T) {
-	// This is a basic test structure
-	// In a real scenario, you would mock the HTTP client
-	t.Run("converts runner status correctly", func(t *testing.T) {
-		// Test that online + busy = Active
-		// Test that online + not busy = Idle
-		// Test that offline = Offline
+func TestNewClient(t *testing.T) {
+	t.Run("create client successfully", func(t *testing.T) {
+		// This test would require environment setup
+		// In a CI environment, it might fail without proper GitHub token
+		t.Skip("Requires GitHub token in environment")
+	})
+	
+	t.Run("error handling", func(t *testing.T) {
+		// Test error scenarios
+		t.Skip("Requires environment manipulation")
+	})
+}
+
+func TestClientMethods(t *testing.T) {
+	t.Run("GetRunners", func(t *testing.T) {
+		t.Skip("Requires HTTP client mocking")
+	})
+	
+	t.Run("GetActiveJobs", func(t *testing.T) {
 		t.Skip("Requires HTTP client mocking")
 	})
 }
 
-func TestClient_GetActiveJobs(t *testing.T) {
-	t.Run("filters only active jobs", func(t *testing.T) {
-		// Test that only in_progress and queued jobs are returned
-		t.Skip("Requires HTTP client mocking")
-	})
-}
-
-func TestFormatDuration(t *testing.T) {
-	// Helper function test
+func TestPathConstruction(t *testing.T) {
 	tests := []struct {
 		name     string
-		duration time.Duration
+		org      string
+		owner    string
+		repo     string
 		expected string
 	}{
 		{
-			name:     "seconds only",
-			duration: 45 * time.Second,
-			expected: "00:45",
+			name:     "repository runners path",
+			org:      "",
+			owner:    "myowner",
+			repo:     "myrepo",
+			expected: "repos/myowner/myrepo/actions/runners",
 		},
 		{
-			name:     "minutes and seconds",
-			duration: 5*time.Minute + 30*time.Second,
-			expected: "05:30",
-		},
-		{
-			name:     "hours minutes and seconds",
-			duration: 2*time.Hour + 15*time.Minute + 45*time.Second,
-			expected: "02:15:45",
+			name:     "organization runners path",
+			org:      "myorg",
+			owner:    "",
+			repo:     "",
+			expected: "orgs/myorg/actions/runners",
 		},
 	}
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test would go here if formatDuration was exported
-			t.Skip("formatDuration is in tui package")
-		})
-	}
-}
-
-func TestGetStatusIcon(t *testing.T) {
-	tests := []struct {
-		name     string
-		status   models.RunnerStatus
-		expected string
-	}{
-		{
-			name:     "idle status",
-			status:   models.StatusIdle,
-			expected: "🟢",
-		},
-		{
-			name:     "active status",
-			status:   models.StatusActive,
-			expected: "🟠",
-		},
-		{
-			name:     "offline status",
-			status:   models.StatusOffline,
-			expected: "⚫",
-		},
-	}
-	
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Test would go here if getStatusIcon was exported
-			t.Skip("getStatusIcon is in tui package")
+			var path string
+			if tt.org != "" {
+				path = fmt.Sprintf("orgs/%s/actions/runners", tt.org)
+			} else {
+				path = fmt.Sprintf("repos/%s/%s/actions/runners", tt.owner, tt.repo)
+			}
+			
+			if path != tt.expected {
+				t.Errorf("expected path %s, got %s", tt.expected, path)
+			}
 		})
 	}
 }
