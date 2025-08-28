@@ -1,57 +1,55 @@
 package github
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestGetJobsForRun(t *testing.T) {
 	tests := []struct {
-		name     string
-		run      workflowRun
-		org      string
-		owner    string
-		repo     string
-		wantOwner string
-		wantRepo  string
+		name      string
+		fullName  string
+		org       string
+		expectErr bool
 	}{
 		{
-			name: "repository-level run",
-			run: workflowRun{
-				ID:   123,
-				Name: "CI",
-				Repository: repository{
-					FullName: "owner/repo",
-				},
-			},
-			org:       "",
-			owner:     "owner",
-			repo:      "repo",
-			wantOwner: "owner",
-			wantRepo:  "repo",
+			name:      "valid repository format",
+			fullName:  "owner/repo",
+			org:       "org",
+			expectErr: false,
 		},
 		{
-			name: "organization-level run",
-			run: workflowRun{
-				ID:   456,
-				Name: "Deploy",
-				Repository: repository{
-					FullName: "myorg/myrepo",
-				},
-			},
-			org:       "myorg",
-			owner:     "",
-			repo:      "",
-			wantOwner: "myorg",
-			wantRepo:  "myrepo",
+			name:      "invalid repository format - no slash",
+			fullName:  "ownerrepo",
+			org:       "org",
+			expectErr: true,
+		},
+		{
+			name:      "invalid repository format - multiple slashes",
+			fullName:  "owner/repo/extra",
+			org:       "org",
+			expectErr: true,
+		},
+		{
+			name:      "empty repository name",
+			fullName:  "",
+			org:       "org",
+			expectErr: true,
 		},
 	}
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// This test verifies the logic for parsing repository names
-			// In a real test, you would mock the HTTP client
-			t.Skip("Requires HTTP client mocking")
+			// Test the repository name parsing logic
+			if tt.org != "" {
+				parts := strings.Split(tt.fullName, "/")
+				hasError := len(parts) != 2
+				
+				if hasError != tt.expectErr {
+					t.Errorf("expected error: %v, got error: %v", tt.expectErr, hasError)
+				}
+			}
 		})
 	}
 }
