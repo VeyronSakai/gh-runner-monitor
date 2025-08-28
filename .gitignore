@@ -1,2 +1,5 @@
 /gh-runner-monitor
 /gh-runner-monitor.exe
+
+# Serena configuration
+.serena/
