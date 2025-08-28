@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	
+
 	"github.com/VeyronSakai/gh-runner-monitor/internal/github"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/tui"
 	tea "github.com/charmbracelet/bubbletea"
@@ -46,9 +46,9 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
 	}
-	
+
 	var owner, repoName, orgName string
-	
+
 	if org != "" {
 		orgName = org
 	} else if repo != "" {
@@ -66,13 +66,13 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 		owner = currentRepo.Owner
 		repoName = currentRepo.Name
 	}
-	
+
 	model := tui.NewModel(client, owner, repoName, orgName)
 	p := tea.NewProgram(model, tea.WithAltScreen())
-	
+
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("error running TUI: %w", err)
 	}
-	
+
 	return nil
 }

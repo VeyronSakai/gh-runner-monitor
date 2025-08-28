@@ -35,7 +35,9 @@ func (c *Client) fetchRunners(path string) (*runnersResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to request runners: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	
 	var runners runnersResponse
 	if err := json.NewDecoder(response.Body).Decode(&runners); err != nil {

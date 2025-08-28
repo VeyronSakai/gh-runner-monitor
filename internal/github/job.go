@@ -44,7 +44,9 @@ func (c *Client) fetchWorkflowRuns(path string) (*workflowRunsResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to request workflow runs: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 
 	var runs workflowRunsResponse
 	if err := json.NewDecoder(response.Body).Decode(&runs); err != nil {
@@ -59,7 +61,9 @@ func (c *Client) fetchJobs(path string) (*jobsResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to request jobs: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 
 	var jobs jobsResponse
 	if err := json.NewDecoder(response.Body).Decode(&jobs); err != nil {
