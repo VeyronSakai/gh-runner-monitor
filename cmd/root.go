@@ -5,11 +5,9 @@ import (
 	"os"
 	"strings"
 	
-	"github.com/VeyronSakai/gh-runner-monitor/internal/domains/services"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/infrastructures/factories"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/presentations/tui"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/use_cases"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/use_cases/ports"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/github"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/tui"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/spf13/cobra"
 )
@@ -42,39 +40,36 @@ func init() {
 }
 
 func runMonitor(cmd *cobra.Command, args []string) error {
-	var params ports.MonitorParams
+	client, err := github.NewClient()
+	if err != nil {
+		return fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+	
+	var owner, repoName, orgName string
 	
 	if org != "" {
-		params = ports.NewOrgMonitorParams(org)
+		orgName = org
 	} else if repo != "" {
 		parts := strings.Split(repo, "/")
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid repository format. Use owner/repo")
 		}
-		params = ports.NewMonitorParams(parts[0], parts[1])
+		owner = parts[0]
+		repoName = parts[1]
 	} else {
 		currentRepo, err := repository.Current()
 		if err != nil {
 			return fmt.Errorf("not in a git repository and no --repo or --org flag specified")
 		}
-		params = ports.NewMonitorParams(currentRepo.Owner, currentRepo.Name)
+		owner = currentRepo.Owner
+		repoName = currentRepo.Name
 	}
 	
-	factory, err := factories.NewRepositoryFactory()
-	if err != nil {
-		return fmt.Errorf("failed to create repository factory: %w", err)
-	}
+	model := tui.NewModel(client, owner, repoName, orgName)
+	p := tea.NewProgram(model, tea.WithAltScreen())
 	
-	runnerRepo := factory.CreateRunnerRepository()
-	jobRepo := factory.CreateJobRepository()
-	monitorService := services.NewRunnerMonitorService()
-	
-	useCase := use_cases.NewMonitorRunnersUseCase(runnerRepo, jobRepo, monitorService)
-	
-	app := tui.NewApp(useCase, params)
-	
-	if err := app.Run(); err != nil {
-		return fmt.Errorf("failed to run application: %w", err)
+	if _, err := p.Run(); err != nil {
+		return fmt.Errorf("error running TUI: %w", err)
 	}
 	
 	return nil
