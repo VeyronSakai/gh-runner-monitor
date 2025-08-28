@@ -3,3 +3,10 @@
 
 # Serena configuration
 .serena/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
