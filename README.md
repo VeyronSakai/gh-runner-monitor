@@ -74,10 +74,58 @@ cd gh-runner-monitor
 go build -o gh-runner-monitor
 ```
 
+### Testing Locally
+
+#### 1. Build and run directly
+```bash
+# Build the binary
+go build -o gh-runner-monitor
+
+# Run with help flag to see options
+./gh-runner-monitor --help
+
+# Monitor current repository
+./gh-runner-monitor
+
+# Monitor specific repository
+./gh-runner-monitor --repo owner/repo
+```
+
+#### 2. Install as gh extension from local directory
+```bash
+# Install from current directory
+gh extension install .
+
+# Run as gh extension
+gh runner-monitor
+
+# Uninstall when done testing
+gh extension remove runner-monitor
+```
+
+#### 3. Test with different configurations
+```bash
+# Monitor a public repository with runners
+gh runner-monitor --repo actions/runner
+
+# Monitor with custom refresh interval (10 seconds)
+gh runner-monitor --interval 10
+
+# Monitor organization (requires org access)
+gh runner-monitor --org your-org-name
+```
+
 ### Running tests
 
 ```bash
+# Run all tests
 go test ./...
+
+# Run tests with coverage
+go test -cover ./...
+
+# Run tests with verbose output
+go test -v ./...
 ```
 
 ## License
