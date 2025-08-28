@@ -11,7 +11,7 @@ import (
 )
 
 // Update handles incoming events and updates the model
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	
@@ -89,7 +89,7 @@ func (m *Model) updateTableRows() {
 }
 
 // fetchData fetches runners and jobs data from GitHub
-func (m Model) fetchData() tea.Cmd {
+func (m *Model) fetchData() tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 		

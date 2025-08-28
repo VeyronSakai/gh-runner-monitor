@@ -28,7 +28,7 @@ type Model struct {
 }
 
 // NewModel creates a new TUI model
-func NewModel(client *github.Client, owner, repo, org string) Model {
+func NewModel(client *github.Client, owner, repo, org string) *Model {
 	columns := []table.Column{
 		{Title: "Runner Name", Width: 25},
 		{Title: "Status", Width: 12},
@@ -54,7 +54,7 @@ func NewModel(client *github.Client, owner, repo, org string) Model {
 		table.WithStyles(s),
 	)
 	
-	return Model{
+	return &Model{
 		table:          t,
 		client:         client,
 		owner:          owner,
@@ -65,7 +65,7 @@ func NewModel(client *github.Client, owner, repo, org string) Model {
 }
 
 // Init initializes the model and returns the initial command
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.fetchData(),
 		tickCmd(m.updateInterval),

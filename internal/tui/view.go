@@ -8,7 +8,7 @@ import (
 )
 
 // View returns the string representation of the model
-func (m Model) View() string {
+func (m *Model) View() string {
 	if m.quitting {
 		return ""
 	}
