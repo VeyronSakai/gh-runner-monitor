@@ -28,7 +28,9 @@ of self-hosted runners with their current jobs and execution times.`,
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		// Explicitly ignore the error from Fprintln as we're already exiting
+		// and there's nothing meaningful we can do if stderr write fails
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
@@ -39,7 +41,7 @@ func init() {
 	rootCmd.Flags().IntVar(&interval, "interval", 5, "Update interval in seconds")
 }
 
-func runMonitor(cmd *cobra.Command, args []string) error {
+func runMonitor(_ *cobra.Command, _ []string) error {
 	client, err := github.NewClient()
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
