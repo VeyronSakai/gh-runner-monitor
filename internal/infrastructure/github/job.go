@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/VeyronSakai/gh-runner-monitor/internal/models"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 )
 
 // GetActiveJobs fetches active jobs for a repository or organization
-func (c *Client) GetActiveJobs(ctx context.Context, owner, repo, org string) ([]*models.Job, error) {
+func (c *Client) GetActiveJobs(ctx context.Context, owner, repo, org string) ([]*entity.Job, error) {
 	var runs *workflowRunsResponse
 	var err error
 
@@ -22,12 +22,12 @@ func (c *Client) GetActiveJobs(ctx context.Context, owner, repo, org string) ([]
 		path := fmt.Sprintf("repos/%s/%s/actions/runs?status=in_progress", owner, repo)
 		runs, err = c.fetchWorkflowRuns(path)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
 
-	var allJobs []*models.Job
+	var allJobs []*entity.Job
 	for _, run := range runs.WorkflowRuns {
 		jobs, err := c.getJobsForRun(run, org, owner, repo)
 		if err != nil {
@@ -73,7 +73,7 @@ func (c *Client) fetchJobs(path string) (*jobsResponse, error) {
 	return &jobs, nil
 }
 
-func (c *Client) getJobsForRun(run workflowRun, org, owner, repo string) ([]*models.Job, error) {
+func (c *Client) getJobsForRun(run workflowRun, org, owner, repo string) ([]*entity.Job, error) {
 	// For org-level, we need to extract owner and repo from the full name
 	var runOwner, runRepo string
 	if org != "" {
@@ -95,10 +95,10 @@ func (c *Client) getJobsForRun(run workflowRun, org, owner, repo string) ([]*mod
 		return nil, err
 	}
 
-	var result []*models.Job
+	var result []*entity.Job
 	for _, job := range jobs.Jobs {
 		if job.Status == "in_progress" || job.Status == "queued" {
-			result = append(result, &models.Job{
+			result = append(result, &entity.Job{
 				ID:           job.ID,
 				RunID:        job.RunID,
 				Name:         job.Name,

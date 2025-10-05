@@ -1,8 +1,8 @@
 package github
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestNewClient(t *testing.T) {
@@ -11,7 +11,7 @@ func TestNewClient(t *testing.T) {
 		// In a CI environment, it might fail without proper GitHub token
 		t.Skip("Requires GitHub token in environment")
 	})
-	
+
 	t.Run("error handling", func(t *testing.T) {
 		// Test error scenarios
 		t.Skip("Requires environment manipulation")
@@ -22,7 +22,7 @@ func TestClientMethods(t *testing.T) {
 	t.Run("GetRunners", func(t *testing.T) {
 		t.Skip("Requires HTTP client mocking")
 	})
-	
+
 	t.Run("GetActiveJobs", func(t *testing.T) {
 		t.Skip("Requires HTTP client mocking")
 	})
@@ -51,7 +51,7 @@ func TestPathConstruction(t *testing.T) {
 			expected: "orgs/myorg/actions/runners",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var path string
@@ -60,7 +60,7 @@ func TestPathConstruction(t *testing.T) {
 			} else {
 				path = fmt.Sprintf("repos/%s/%s/actions/runners", tt.owner, tt.repo)
 			}
-			
+
 			if path != tt.expected {
 				t.Errorf("expected path %s, got %s", tt.expected, path)
 			}

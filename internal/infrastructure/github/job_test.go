@@ -38,14 +38,14 @@ func TestGetJobsForRun(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test the repository name parsing logic
 			if tt.org != "" {
 				parts := strings.Split(tt.fullName, "/")
 				hasError := len(parts) != 2
-				
+
 				if hasError != tt.expectErr {
 					t.Errorf("expected error: %v, got error: %v", tt.expectErr, hasError)
 				}
@@ -58,7 +58,7 @@ func TestFilterActiveJobs(t *testing.T) {
 	now := time.Now()
 	runnerID := int64(1)
 	runnerName := "test-runner"
-	
+
 	jobsResp := &jobsResponse{
 		Jobs: []jobResponse{
 			{
@@ -99,7 +99,7 @@ func TestFilterActiveJobs(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Test that only in_progress and queued jobs are included
 	activeCount := 0
 	for _, job := range jobsResp.Jobs {
@@ -107,7 +107,7 @@ func TestFilterActiveJobs(t *testing.T) {
 			activeCount++
 		}
 	}
-	
+
 	if activeCount != 2 {
 		t.Errorf("expected 2 active jobs, got %d", activeCount)
 	}

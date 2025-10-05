@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VeyronSakai/gh-runner-monitor/internal/models"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/value_object"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -14,14 +14,14 @@ import (
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		m.table.SetHeight(msg.Height - 10)
 		return m, nil
-		
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -30,29 +30,31 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			return m, m.fetchData()
 		}
-		
-	case tickMsg:
+
+	case value_object.TickMsg:
 		return m, tea.Batch(
 			m.fetchData(),
-			tickCmd(m.updateInterval),
+			tea.Tick(m.updateInterval, func(t time.Time) tea.Msg {
+				return value_object.TickMsg(t)
+			}),
 		)
-		
-	case dataMsg:
-		if msg.err != nil {
-			m.err = msg.err
+
+	case value_object.DataMsg:
+		if msg.Err != nil {
+			m.err = msg.Err
 		} else {
-			m.runners = msg.runners
-			m.jobs = msg.jobs
+			m.runners = msg.Data.Runners
+			m.jobs = msg.Data.Jobs
 			m.lastUpdate = time.Now()
 			m.err = nil
 			m.updateTableRows()
 		}
 		return m, nil
 	}
-	
+
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
-	
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -62,22 +64,19 @@ func (m *Model) updateTableRows() {
 	for _, runner := range m.runners {
 		statusIcon := getStatusIcon(runner.Status)
 		status := fmt.Sprintf("%s %s", statusIcon, runner.Status)
-		
+
 		jobName := "-"
 		execTime := "-"
-		
+
 		// Find active job for this runner
 		for _, job := range m.jobs {
-			if job.RunnerID != nil && *job.RunnerID == runner.ID {
+			if job.IsAssignedToRunner(runner.ID) {
 				jobName = fmt.Sprintf("%s (%s)", job.Name, job.WorkflowName)
-				if job.StartedAt != nil {
-					duration := time.Since(*job.StartedAt)
-					execTime = formatDuration(duration)
-				}
+				execTime = formatDuration(job.GetExecutionDuration())
 				break
 			}
 		}
-		
+
 		rows = append(rows, table.Row{
 			runner.Name,
 			status,
@@ -88,31 +87,16 @@ func (m *Model) updateTableRows() {
 	m.table.SetRows(rows)
 }
 
-// fetchData fetches runners and jobs data from GitHub
+// fetchData fetches runners and jobs data using the use case
 func (m *Model) fetchData() tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		
-		runners, err := m.client.GetRunners(ctx, m.owner, m.repo, m.org)
+
+		data, err := m.useCase.Execute(ctx, m.owner, m.repo, m.org)
 		if err != nil {
-			return dataMsg{err: err}
+			return value_object.DataMsg{Err: err}
 		}
-		
-		jobs, err := m.client.GetActiveJobs(ctx, m.owner, m.repo, m.org)
-		if err != nil {
-			return dataMsg{err: err}
-		}
-		
-		// Update runner status based on active jobs
-		for _, runner := range runners {
-			for _, job := range jobs {
-				if job.RunnerID != nil && *job.RunnerID == runner.ID {
-					runner.Status = models.StatusActive
-					break
-				}
-			}
-		}
-		
-		return dataMsg{runners: runners, jobs: jobs}
+
+		return value_object.DataMsg{Data: data}
 	}
 }

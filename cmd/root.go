@@ -5,8 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VeyronSakai/gh-runner-monitor/internal/github"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/tui"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/service"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/infrastructure/github"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/presentation/tui"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase/monitor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/spf13/cobra"
@@ -21,7 +23,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "gh-runner-monitor",
 	Short: "Monitor GitHub Actions self-hosted runners in real-time",
-	Long: `GitHub Actions Runner Monitor is a TUI tool that displays the status 
+	Long: `GitHub Actions Runner Monitor is a TUI tool that displays the status
 of self-hosted runners with their current jobs and execution times.`,
 	RunE: runMonitor,
 }
@@ -42,6 +44,7 @@ func init() {
 }
 
 func runMonitor(_ *cobra.Command, _ []string) error {
+	// Create infrastructure layer (GitHub client)
 	client, err := github.NewClient()
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
@@ -67,7 +70,14 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 		repoName = currentRepo.Name
 	}
 
-	model := tui.NewModel(client, owner, repoName, orgName)
+	// Create domain service
+	runnerService := service.NewRunnerService()
+
+	// Create use case with dependencies
+	monitorUseCase := monitor.NewMonitorRunnersUseCase(client, runnerService)
+
+	// Create presentation layer (TUI) with use case
+	model := tui.NewModel(monitorUseCase, owner, repoName, orgName)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {

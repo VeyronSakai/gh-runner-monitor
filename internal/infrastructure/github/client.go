@@ -17,7 +17,7 @@ func NewClient() (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create REST client: %w", err)
 	}
-	
+
 	return &Client{
 		restClient: restClient,
 	}, nil

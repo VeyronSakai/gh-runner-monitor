@@ -3,8 +3,9 @@ package tui
 import (
 	"time"
 
-	"github.com/VeyronSakai/gh-runner-monitor/internal/github"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/models"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/value_object"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase/monitor"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -13,12 +14,12 @@ import (
 // Model represents the TUI application state
 type Model struct {
 	table          table.Model
-	client         *github.Client
+	useCase        *monitor.MonitorRunnersUseCase
 	owner          string
 	repo           string
 	org            string
-	runners        []*models.Runner
-	jobs           []*models.Job
+	runners        []*entity.Runner
+	jobs           []*entity.Job
 	lastUpdate     time.Time
 	updateInterval time.Duration
 	err            error
@@ -28,14 +29,14 @@ type Model struct {
 }
 
 // NewModel creates a new TUI model
-func NewModel(client *github.Client, owner, repo, org string) *Model {
+func NewModel(useCase *monitor.MonitorRunnersUseCase, owner, repo, org string) *Model {
 	columns := []table.Column{
 		{Title: "Runner Name", Width: 25},
 		{Title: "Status", Width: 12},
 		{Title: "Job Name", Width: 35},
 		{Title: "Execution Time", Width: 15},
 	}
-	
+
 	s := table.DefaultStyles()
 	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
@@ -46,17 +47,17 @@ func NewModel(client *github.Client, owner, repo, org string) *Model {
 		Foreground(lipgloss.Color("229")).
 		Background(lipgloss.Color("57")).
 		Bold(false)
-	
+
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithFocused(true),
 		table.WithHeight(15),
 		table.WithStyles(s),
 	)
-	
+
 	return &Model{
 		table:          t,
-		client:         client,
+		useCase:        useCase,
 		owner:          owner,
 		repo:           repo,
 		org:            org,
@@ -68,6 +69,8 @@ func NewModel(client *github.Client, owner, repo, org string) *Model {
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.fetchData(),
-		tickCmd(m.updateInterval),
+		tea.Tick(m.updateInterval, func(t time.Time) tea.Msg {
+			return value_object.TickMsg(t)
+		}),
 	)
 }
