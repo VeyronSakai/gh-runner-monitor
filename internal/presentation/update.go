@@ -31,11 +31,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.fetchData()
 		}
 
-	case value_object.TickMsg:
+	case time.Time:
 		return m, tea.Batch(
 			m.fetchData(),
 			tea.Tick(m.updateInterval, func(t time.Time) tea.Msg {
-				return value_object.TickMsg(t)
+				return t
 			}),
 		)
 

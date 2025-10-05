@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/value_object"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -70,7 +69,7 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.fetchData(),
 		tea.Tick(m.updateInterval, func(t time.Time) tea.Msg {
-			return value_object.TickMsg(t)
+			return t
 		}),
 	)
 }
