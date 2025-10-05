@@ -74,8 +74,7 @@ func TestDataMerging(t *testing.T) {
 		}
 
 		// Use the domain service to update runner status
-		runnerService := service.NewRunnerService()
-		runnerService.UpdateRunnerStatus(runners, jobs)
+		service.UpdateRunnerStatus(runners, jobs)
 
 		// Verify runner 1 is now active
 		if runners[0].Status != entity.StatusActive {

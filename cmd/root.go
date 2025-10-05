@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/service"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/infrastructure/github"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/presentation"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase"
@@ -70,11 +69,8 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 		repoName = currentRepo.Name
 	}
 
-	// Create domain service
-	runnerService := service.NewRunnerService()
-
 	// Create use case with dependencies
-	monitorUseCase := usecase.NewMonitorRunnersUseCase(client, runnerService)
+	monitorUseCase := usecase.NewMonitorRunnersUseCase(client)
 
 	// Create presentation layer (TUI) with use case
 	model := presentation.NewModel(monitorUseCase, owner, repoName, orgName)

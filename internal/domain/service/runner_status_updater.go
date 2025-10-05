@@ -4,17 +4,9 @@ import (
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 )
 
-// RunnerService provides domain logic for runners
-type RunnerService struct{}
-
-// NewRunnerService creates a new RunnerService
-func NewRunnerService() *RunnerService {
-	return &RunnerService{}
-}
-
 // UpdateRunnerStatus updates the runner status based on active jobs
 // If a runner has an active job, its status is set to Active
-func (s *RunnerService) UpdateRunnerStatus(runners []*entity.Runner, jobs []*entity.Job) {
+func UpdateRunnerStatus(runners []*entity.Runner, jobs []*entity.Job) {
 	for _, runner := range runners {
 		// Reset to idle if the runner is online but not assigned to any job
 		if runner.IsOnline() && !runner.IsActive() {

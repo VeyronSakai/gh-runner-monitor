@@ -10,18 +10,15 @@ import (
 
 // MonitorRunnersUseCase handles the business logic for monitoring runners
 type MonitorRunnersUseCase struct {
-	runnerRepo    repository.RunnerRepository
-	runnerService *service.RunnerService
+	runnerRepo repository.RunnerRepository
 }
 
 // NewMonitorRunnersUseCase creates a new MonitorRunnersUseCase
 func NewMonitorRunnersUseCase(
 	runnerRepo repository.RunnerRepository,
-	runnerService *service.RunnerService,
 ) *MonitorRunnersUseCase {
 	return &MonitorRunnersUseCase{
-		runnerRepo:    runnerRepo,
-		runnerService: runnerService,
+		runnerRepo: runnerRepo,
 	}
 }
 
@@ -40,7 +37,7 @@ func (u *MonitorRunnersUseCase) Execute(ctx context.Context, owner, repo, org st
 	}
 
 	// Update runner status based on active jobs
-	u.runnerService.UpdateRunnerStatus(runners, jobs)
+	service.UpdateRunnerStatus(runners, jobs)
 
 	return &value_object.MonitorData{
 		Runners: runners,

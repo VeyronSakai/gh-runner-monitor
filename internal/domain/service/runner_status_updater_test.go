@@ -7,8 +7,6 @@ import (
 )
 
 func TestUpdateRunnerStatus(t *testing.T) {
-	service := NewRunnerService()
-
 	t.Run("update runner status with active job", func(t *testing.T) {
 		runners := []*entity.Runner{
 			{ID: 1, Name: "runner-1", Status: entity.StatusIdle},
@@ -20,7 +18,7 @@ func TestUpdateRunnerStatus(t *testing.T) {
 			{ID: 100, Name: "build", Status: "in_progress", RunnerID: &runnerID},
 		}
 
-		service.UpdateRunnerStatus(runners, jobs)
+		UpdateRunnerStatus(runners, jobs)
 
 		if runners[0].Status != entity.StatusActive {
 			t.Errorf("expected runner-1 to be Active, got %s", runners[0].Status)
@@ -38,7 +36,7 @@ func TestUpdateRunnerStatus(t *testing.T) {
 
 		jobs := []*entity.Job{}
 
-		service.UpdateRunnerStatus(runners, jobs)
+		UpdateRunnerStatus(runners, jobs)
 
 		if runners[0].Status != entity.StatusIdle {
 			t.Errorf("expected runner-1 to remain Idle, got %s", runners[0].Status)
@@ -55,7 +53,7 @@ func TestUpdateRunnerStatus(t *testing.T) {
 			{ID: 100, Name: "build", Status: "in_progress", RunnerID: &runnerID},
 		}
 
-		service.UpdateRunnerStatus(runners, jobs)
+		UpdateRunnerStatus(runners, jobs)
 
 		// Offline runner should become active if it has a job
 		if runners[0].Status != entity.StatusActive {
