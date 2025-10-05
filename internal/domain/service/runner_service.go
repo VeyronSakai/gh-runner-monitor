@@ -30,13 +30,3 @@ func (s *RunnerService) UpdateRunnerStatus(runners []*entity.Runner, jobs []*ent
 		}
 	}
 }
-
-// FindJobForRunner finds the active job assigned to a specific runner
-func (s *RunnerService) FindJobForRunner(runnerID int64, jobs []*entity.Job) *entity.Job {
-	for _, job := range jobs {
-		if job.IsAssignedToRunner(runnerID) {
-			return job
-		}
-	}
-	return nil
-}
