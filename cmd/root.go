@@ -8,7 +8,7 @@ import (
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/service"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/infrastructure/github"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/presentation/tui"
-	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase/monitor"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/spf13/cobra"
@@ -74,7 +74,7 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 	runnerService := service.NewRunnerService()
 
 	// Create use case with dependencies
-	monitorUseCase := monitor.NewMonitorRunnersUseCase(client, runnerService)
+	monitorUseCase := usecase.NewMonitorRunnersUseCase(client, runnerService)
 
 	// Create presentation layer (TUI) with use case
 	model := tui.NewModel(monitorUseCase, owner, repoName, orgName)
