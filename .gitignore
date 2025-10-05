@@ -3,3 +3,7 @@
 
 # Serena configuration
 .serena/
+
+# IDE
+.idea/
+.claude/
