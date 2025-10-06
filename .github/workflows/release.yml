@@ -118,7 +118,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           # Fetch all tags from remote to ensure we have the release tag created by gh-extension-precompile
-          git fetch --tags --force origin
+          git fetch origin "+refs/tags/*:refs/tags/*" --force
 
           if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:RELEASE_TAG) {
             $refspec = "refs/tags/${env:RELEASE_TAG}:refs/tags/${env:MAJOR_TAG}"
