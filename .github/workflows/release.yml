@@ -1,66 +1,57 @@
 name: Release
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - closed
+  pull_request:
+    types: [opened, reopened, synchronize]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pull-requests: read
+  contents: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 defaults:
   run:
     shell: pwsh
 
 jobs:
-  update-draft:
+  update_release_draft:
     name: Update release draft
-    if: >-
-      ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' && (github.event.action != 'closed' || github.event.pull_request.merged) }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      tag_name: ${{ steps.release_drafter.outputs.tag_name }}
     steps:
-      - name: Refresh draft release notes
-        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
+      - uses: release-drafter/release-drafter@v6
+        id: release_drafter
         with:
           commitish: main
 
-  publish:
-    name: Publish release
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+  release:
+    name: Release
+    environment: release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      attestations: write
-      id-token: write
+    if: github.event_name == 'workflow_dispatch'
+    needs: update_release_draft
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.update_release_draft.outputs.tag_name }}
     steps:
-      - name: Get draft release info
+      - name: Publish draft release
+        uses: release-drafter/release-drafter@v6
         id: release-drafter
-        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
         with:
+          publish: true
           commitish: main
 
       - name: Validate release tag output
         run: |
-          if (-not $env:RELEASE_TAG) {
+          if (-not $env:VERSION) {
             Write-Error "Release Drafter did not output tag_name."
             exit 1
           }
-        env:
-          RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
 
       - name: Check out release tag
         uses: actions/checkout@v5
@@ -72,17 +63,15 @@ jobs:
       - name: Build and upload release artifacts
         uses: cli/gh-extension-precompile@v2
         with:
-          release_tag: ${{ steps.release-drafter.outputs.tag_name }}
+          release_tag: ${{ env.VERSION }}
           go_version_file: go.mod
           generate_attestations: true
           draft_release: false
 
-      - name: Determine semver tags
-        id: determine-semver
-        env:
-          RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
+      - name: Create semver outputs
+        id: semver
         run: |
-          $tag = $env:RELEASE_TAG
+          $tag = $env:VERSION
           if (-not $tag) {
             Write-Error "Release tag is empty."
             exit 1
@@ -91,49 +80,57 @@ jobs:
           if ($tag -match '^v?(\d+)\.(\d+)\.(\d+)$') {
             $major = $matches[1]
             $minor = $matches[2]
+            $patch = $matches[3]
 
             $hasPrefix = $tag.StartsWith('v')
             $prefix = if ($hasPrefix) { 'v' } else { '' }
 
             $majorTag = if ($major -eq '0') { '' } else { $prefix + $major }
             $minorTag = if ("$major.$minor" -eq '0.0') { '' } else { $prefix + $major + '.' + $minor }
+            $patchTag = $prefix + $major + '.' + $minor + '.' + $patch
 
+            "major=$major" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "minor=$minor" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "patch=$patch" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             "major_tag=$majorTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             "minor_tag=$minorTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "patch_tag=$patchTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           }
           else {
             Write-Error "Release tag '$tag' is not a valid semver (expected v1.2.3)."
             exit 1
           }
 
-      - name: Push semver tags
-        if: >-
-          ${{ steps.determine-semver.outputs.major_tag != '' || steps.determine-semver.outputs.minor_tag != '' }}
-        env:
-          RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
-          MAJOR_TAG: ${{ steps.determine-semver.outputs.major_tag }}
-          MINOR_TAG: ${{ steps.determine-semver.outputs.minor_tag }}
+      - name: Configure git and fetch tags
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           # Fetch all tags from remote to ensure we have the release tag created by gh-extension-precompile
           git fetch origin "+refs/tags/*:refs/tags/*" --force
 
           # Verify the release tag exists locally
-          if (-not (git rev-parse "refs/tags/$env:RELEASE_TAG" 2>$null)) {
-            Write-Error "Release tag '$env:RELEASE_TAG' not found after fetch."
+          if (-not (git rev-parse "refs/tags/$env:VERSION" 2>$null)) {
+            Write-Error "Release tag '$env:VERSION' not found after fetch."
             exit 1
           }
 
-          # Create and push major version tag
-          if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:RELEASE_TAG) {
-            git tag -f $env:MAJOR_TAG $env:RELEASE_TAG
+      - name: Update major tag
+        if: steps.semver.outputs.major_tag != ''
+        env:
+          MAJOR_TAG: ${{ steps.semver.outputs.major_tag }}
+        run: |
+          if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:VERSION) {
+            git tag -f $env:MAJOR_TAG $env:VERSION
             git push --force origin "refs/tags/${env:MAJOR_TAG}"
           }
 
-          # Create and push minor version tag
-          if ($env:MINOR_TAG -and $env:MINOR_TAG -ne $env:RELEASE_TAG) {
-            git tag -f $env:MINOR_TAG $env:RELEASE_TAG
+      - name: Update minor tag
+        if: steps.semver.outputs.minor_tag != ''
+        env:
+          MINOR_TAG: ${{ steps.semver.outputs.minor_tag }}
+        run: |
+          if ($env:MINOR_TAG -and $env:MINOR_TAG -ne $env:VERSION) {
+            git tag -f $env:MINOR_TAG $env:VERSION
             git push --force origin "refs/tags/${env:MINOR_TAG}"
           }
