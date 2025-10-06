@@ -1,6 +1,14 @@
 name: Release
 
 on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
   workflow_dispatch:
 
 permissions:
@@ -12,6 +20,20 @@ defaults:
     shell: pwsh
 
 jobs:
+  update-draft:
+    name: Update release draft
+    if: >-
+      ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' && (github.event.action != 'closed' || github.event.pull_request.merged) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Refresh draft release notes
+        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
+        with:
+          commitish: main
+
   publish:
     name: Publish release
     if: ${{ github.event_name == 'workflow_dispatch' }}
