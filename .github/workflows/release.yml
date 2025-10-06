@@ -25,7 +25,7 @@ jobs:
     outputs:
       tag_name: ${{ steps.release_drafter.outputs.tag_name }}
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
         id: release_drafter
         with:
           commitish: main
@@ -43,19 +43,10 @@ jobs:
     env:
       VERSION: ${{ needs.update_release_draft.outputs.tag_name }}
     steps:
-      - name: Validate release tag output
-        run: |
-          if (-not $env:VERSION) {
-            Write-Error "Release Drafter did not output tag_name."
-            exit 1
-          }
-
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           ref: main
-          fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Build and upload release artifacts
         uses: cli/gh-extension-precompile@v2
@@ -65,8 +56,15 @@ jobs:
           generate_attestations: true
           draft_release: false
 
-      - name: Create semver outputs
-        id: semver
+      - name: Publish draft release
+        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
+        id: release-drafter
+        with:
+          publish: true
+          commitish: main
+
+      - name: Get semver
+        id: get-semver
         run: |
           $tag = $env:VERSION
           if (-not $tag) {
@@ -98,43 +96,22 @@ jobs:
             exit 1
           }
 
-      - name: Configure git and fetch tags
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Fetch all tags from remote to ensure we have the release tag created by gh-extension-precompile
-          git fetch origin "+refs/tags/*:refs/tags/*" --force
-
-          # Verify the release tag exists locally
-          if (-not (git rev-parse "refs/tags/$env:VERSION" 2>$null)) {
-            Write-Error "Release tag '$env:VERSION' not found after fetch."
-            exit 1
-          }
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.VERSION }}
 
       - name: Update major tag
-        if: ${{ steps.semver.outputs.major_tag != '' }}
+        if: ${{ steps.get-semver.outputs.major != 'v0' }}
         env:
-          MAJOR_TAG: ${{ steps.semver.outputs.major_tag }}
+          MAJOR_TAG: ${{ steps.get-semver.outputs.major }}
         run: |
-          if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:VERSION) {
-            git tag -f $env:MAJOR_TAG $env:VERSION
-            git push --force origin "refs/tags/${env:MAJOR_TAG}"
-          }
+          $refspec = "refs/tags/${env:VERSION}:refs/tags/${env:MAJOR_TAG}"
+          git push -f origin $refspec
 
       - name: Update minor tag
-        if: ${{ steps.semver.outputs.minor_tag != '' }}
+        if: ${{ steps.get-semver.outputs.minor != 'v0.0' }}
         env:
-          MINOR_TAG: ${{ steps.semver.outputs.minor_tag }}
+          MINOR_TAG: ${{ steps.get-semver.outputs.minor }}
         run: |
-          if ($env:MINOR_TAG -and $env:MINOR_TAG -ne $env:VERSION) {
-            git tag -f $env:MINOR_TAG $env:VERSION
-            git push --force origin "refs/tags/${env:MINOR_TAG}"
-          }
-
-      - name: Publish draft release
-        uses: release-drafter/release-drafter@v6
-        id: release-drafter
-        with:
-          publish: true
-          commitish: main
+          $refspec = "refs/tags/${env:VERSION}:refs/tags/${env:MINOR_TAG}"
+          git push -f origin $refspec
