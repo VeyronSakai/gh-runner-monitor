@@ -1,0 +1,66 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '💥 Breaking Changes'
+    labels:
+      - breaking-change
+      - breaking
+  - title: '✨ Features'
+    labels:
+      - enhancement
+      - feature
+  - title: '🐛 Bug Fixes'
+    labels:
+      - bug
+      - fix
+  - title: '🧰 Maintenance'
+    labels:
+      - chore
+      - refactor
+      - documentation
+      - deps
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\\<*_&'
+version-resolver:
+  major:
+    labels:
+      - breaking-change
+      - breaking
+  minor:
+    labels:
+      - enhancement
+      - feature
+  patch:
+    labels:
+      - bug
+      - fix
+      - chore
+      - documentation
+      - deps
+  default: patch
+autolabeler:
+  - label: enhancement
+    branch:
+      - '/feature\\/.*/'
+      - '/feat\\/.*/'
+    title:
+      - '/feat/i'
+  - label: bug
+    branch:
+      - '/fix\\/.*/'
+      - '/bugfix\\/.*/'
+    title:
+      - '/fix/i'
+  - label: chore
+    branch:
+      - '/chore\\/.*/'
+      - '/ci\\/.*/'
+  - label: documentation
+    branch:
+      - '/docs?\\/.*/'
+template: |
+  ## Changes
+  $CHANGES
+
+  ## Contributors
+  $CONTRIBUTORS

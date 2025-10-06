@@ -1,19 +1,123 @@
-name: release
+name: Release
+
 on:
-  push:
-    tags:
-      - "v*"
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+  workflow_dispatch:
+
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
+  pull-requests: read
+
+defaults:
+  run:
+    shell: pwsh
 
 jobs:
-  release:
+  update-draft:
+    name: Update release draft
+    if: >-
+      ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' && (github.event.action != 'closed' || github.event.pull_request.merged) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: cli/gh-extension-precompile@v2
+      - name: Refresh draft release notes
+        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
         with:
-          generate_attestations: true
+          commitish: main
+
+  publish:
+    name: Publish release
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Publish release via Release Drafter
+        id: release-drafter
+        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
+        with:
+          publish: true
+          commitish: main
+
+      - name: Validate release tag output
+        run: |
+          if (-not $env:RELEASE_TAG) {
+            Write-Error "Release Drafter did not output tag_name."
+            exit 1
+          }
+        env:
+          RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
+
+      - name: Check out release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.release-drafter.outputs.tag_name }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Build and upload release artifacts
+        uses: cli/gh-extension-precompile@v2
+        with:
+          release_tag: ${{ steps.release-drafter.outputs.tag_name }}
           go_version_file: go.mod
+          generate_attestations: true
+
+      - name: Determine semver tags
+        id: determine-semver
+        env:
+          RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
+        run: |
+          $tag = $env:RELEASE_TAG
+          if (-not $tag) {
+            Write-Error "Release tag is empty."
+            exit 1
+          }
+
+          if ($tag -match '^v?(\d+)\.(\d+)\.(\d+)$') {
+            $major = $matches[1]
+            $minor = $matches[2]
+
+            $hasPrefix = $tag.StartsWith('v')
+            $prefix = if ($hasPrefix) { 'v' } else { '' }
+
+            $majorTag = if ($major -eq '0') { '' } else { $prefix + $major }
+            $minorTag = if ("$major.$minor" -eq '0.0') { '' } else { $prefix + $major + '.' + $minor }
+
+            "major_tag=$majorTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "minor_tag=$minorTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          }
+          else {
+            Write-Error "Release tag '$tag' is not a valid semver (expected v1.2.3)."
+            exit 1
+          }
+
+      - name: Push semver tags
+        if: >-
+          ${{ steps.determine-semver.outputs.major_tag != '' || steps.determine-semver.outputs.minor_tag != '' }}
+        env:
+          RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
+          MAJOR_TAG: ${{ steps.determine-semver.outputs.major_tag }}
+          MINOR_TAG: ${{ steps.determine-semver.outputs.minor_tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+
+          if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:RELEASE_TAG) {
+            git push --force origin ("refs/tags/{0}:refs/tags/{1}" -f $env:RELEASE_TAG, $env:MAJOR_TAG)
+          }
+
+          if ($env:MINOR_TAG -and $env:MINOR_TAG -ne $env:RELEASE_TAG) {
+            git push --force origin ("refs/tags/{0}:refs/tags/{1}" -f $env:RELEASE_TAG, $env:MINOR_TAG)
+          }
