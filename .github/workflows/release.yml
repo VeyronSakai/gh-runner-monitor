@@ -39,12 +39,6 @@ jobs:
     env:
       VERSION: ${{ needs.update_release_draft.outputs.tag_name }}
     steps:
-      - name: Get draft release info
-        uses: release-drafter/release-drafter@v6
-        id: release-drafter
-        with:
-          commitish: main
-
       - name: Validate release tag output
         run: |
           if (-not $env:VERSION) {
@@ -52,7 +46,7 @@ jobs:
             exit 1
           }
 
-      - name: Check out release tag
+      - name: Checkout
         uses: actions/checkout@v5
         with:
           ref: main
@@ -115,7 +109,7 @@ jobs:
           }
 
       - name: Update major tag
-        if: steps.semver.outputs.major_tag != ''
+        if: ${{ steps.semver.outputs.major_tag != '' }}
         env:
           MAJOR_TAG: ${{ steps.semver.outputs.major_tag }}
         run: |
@@ -125,7 +119,7 @@ jobs:
           }
 
       - name: Update minor tag
-        if: steps.semver.outputs.minor_tag != ''
+        if: ${{ steps.semver.outputs.minor_tag != '' }}
         env:
           MINOR_TAG: ${{ steps.semver.outputs.minor_tag }}
         run: |
@@ -133,3 +127,10 @@ jobs:
             git tag -f $env:MINOR_TAG $env:VERSION
             git push --force origin "refs/tags/${env:MINOR_TAG}"
           }
+
+      - name: Publish draft release
+        uses: release-drafter/release-drafter@v6
+        id: release-drafter
+        with:
+          publish: true
+          commitish: main
