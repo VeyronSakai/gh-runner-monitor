@@ -47,11 +47,10 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Publish release via Release Drafter
+      - name: Get draft release info
         id: release-drafter
         uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5
         with:
-          publish: true
           commitish: main
 
       - name: Validate release tag output
@@ -66,7 +65,7 @@ jobs:
       - name: Check out release tag
         uses: actions/checkout@v5
         with:
-          ref: ${{ steps.release-drafter.outputs.tag_name }}
+          ref: main
           fetch-depth: 0
           persist-credentials: true
 
@@ -76,6 +75,7 @@ jobs:
           release_tag: ${{ steps.release-drafter.outputs.tag_name }}
           go_version_file: go.mod
           generate_attestations: true
+          draft_release: false
 
       - name: Determine semver tags
         id: determine-semver
