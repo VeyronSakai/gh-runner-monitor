@@ -120,12 +120,20 @@ jobs:
           # Fetch all tags from remote to ensure we have the release tag created by gh-extension-precompile
           git fetch origin "+refs/tags/*:refs/tags/*" --force
 
-          if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:RELEASE_TAG) {
-            $refspec = "refs/tags/${env:RELEASE_TAG}:refs/tags/${env:MAJOR_TAG}"
-            git push --force origin $refspec
+          # Verify the release tag exists locally
+          if (-not (git rev-parse "refs/tags/$env:RELEASE_TAG" 2>$null)) {
+            Write-Error "Release tag '$env:RELEASE_TAG' not found after fetch."
+            exit 1
           }
 
+          # Create and push major version tag
+          if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:RELEASE_TAG) {
+            git tag -f $env:MAJOR_TAG $env:RELEASE_TAG
+            git push --force origin "refs/tags/${env:MAJOR_TAG}"
+          }
+
+          # Create and push minor version tag
           if ($env:MINOR_TAG -and $env:MINOR_TAG -ne $env:RELEASE_TAG) {
-            $refspec = "refs/tags/${env:RELEASE_TAG}:refs/tags/${env:MINOR_TAG}"
-            git push --force origin $refspec
+            git tag -f $env:MINOR_TAG $env:RELEASE_TAG
+            git push --force origin "refs/tags/${env:MINOR_TAG}"
           }
