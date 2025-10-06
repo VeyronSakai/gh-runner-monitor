@@ -39,11 +39,10 @@ jobs:
     env:
       VERSION: ${{ needs.update_release_draft.outputs.tag_name }}
     steps:
-      - name: Publish draft release
+      - name: Get draft release info
         uses: release-drafter/release-drafter@v6
         id: release-drafter
         with:
-          publish: true
           commitish: main
 
       - name: Validate release tag output
