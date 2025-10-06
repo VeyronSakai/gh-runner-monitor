@@ -121,11 +121,11 @@ jobs:
           git fetch origin "+refs/tags/*:refs/tags/*" --force
 
           if ($env:MAJOR_TAG -and $env:MAJOR_TAG -ne $env:RELEASE_TAG) {
-            git tag -f $env:MAJOR_TAG $env:RELEASE_TAG
-            git push --force origin "refs/tags/$env:MAJOR_TAG"
+            $refspec = "refs/tags/${env:RELEASE_TAG}:refs/tags/${env:MAJOR_TAG}"
+            git push --force origin $refspec
           }
 
           if ($env:MINOR_TAG -and $env:MINOR_TAG -ne $env:RELEASE_TAG) {
-            git tag -f $env:MINOR_TAG $env:RELEASE_TAG
-            git push --force origin "refs/tags/$env:MINOR_TAG"
+            $refspec = "refs/tags/${env:RELEASE_TAG}:refs/tags/${env:MINOR_TAG}"
+            git push --force origin $refspec
           }
