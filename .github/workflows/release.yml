@@ -60,7 +60,7 @@ jobs:
           RELEASE_TAG: ${{ steps.release-drafter.outputs.tag_name }}
 
       - name: Check out release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ steps.release-drafter.outputs.tag_name }}
           fetch-depth: 0
