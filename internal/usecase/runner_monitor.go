@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/repository"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/service"
@@ -38,14 +37,8 @@ func (u *RunnerMonitor) Execute(ctx context.Context, owner, repo, org string) (*
 	// Update runner status based on active jobs
 	service.UpdateRunnerStatus(runners, jobs)
 
-	// Get current time (use mocked time if available, otherwise use actual time)
-	currentTime := time.Now()
-	if timeProvider, ok := u.runnerRepo.(interface{ GetCurrentTime() time.Time }); ok {
-		currentTime = timeProvider.GetCurrentTime()
-	}
-
 	return &value_object.MonitorData{
-		CurrentTime: currentTime,
+		CurrentTime: u.runnerRepo.GetCurrentTime(),
 		Runners:     runners,
 		Jobs:        jobs,
 	}, nil

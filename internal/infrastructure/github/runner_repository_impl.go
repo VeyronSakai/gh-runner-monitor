@@ -61,6 +61,12 @@ func (r *RunnerRepositoryImpl) GetActiveJobs(ctx context.Context, owner, repo, o
 	return allJobs, nil
 }
 
+// GetCurrentTime returns the current time
+// This implements the TimeProvider interface for production use
+func (r *RunnerRepositoryImpl) GetCurrentTime() time.Time {
+	return time.Now()
+}
+
 // buildRunnersPath constructs the API path for fetching runners
 func (r *RunnerRepositoryImpl) buildRunnersPath(owner, repo, org string) string {
 	if org != "" {
