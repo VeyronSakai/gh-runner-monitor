@@ -1,11 +1,14 @@
 package value_object
 
 import (
+	"time"
+
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 )
 
-// MonitorData represents the monitoring result
+// MonitorData represents the data for the runner monitor
 type MonitorData struct {
-	Runners []*entity.Runner
-	Jobs    []*entity.Job
+	CurrentTime time.Time
+	Runners     []*entity.Runner
+	Jobs        []*entity.Job
 }

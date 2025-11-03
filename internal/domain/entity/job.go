@@ -37,3 +37,11 @@ func (j *Job) GetExecutionDuration() time.Duration {
 	}
 	return time.Since(*j.StartedAt)
 }
+
+// GetExecutionDurationAt returns the duration from the start time to the specified time
+func (j *Job) GetExecutionDurationAt(currentTime time.Time) time.Duration {
+	if j.StartedAt == nil {
+		return 0
+	}
+	return currentTime.Sub(*j.StartedAt)
+}

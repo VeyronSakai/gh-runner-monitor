@@ -50,15 +50,6 @@ gh runner-monitor --interval 10  # Update every 10 seconds
 - `r` - Manual refresh
 - `q` or `Ctrl+C` - Quit
 
-## Architecture
-
-This project follows Onion Architecture with the following layers:
-
-- **Domain Layer**: Core entities and business rules
-- **Use Cases Layer**: Application business logic
-- **Infrastructure Layer**: External implementations (GitHub API)
-- **Presentation Layer**: TUI components
-
 ## Development
 
 ### Prerequisites
