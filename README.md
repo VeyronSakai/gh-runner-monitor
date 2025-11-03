@@ -10,6 +10,8 @@ A GitHub CLI extension that provides real-time monitoring of GitHub Actions self
 - 🏢 Support for both repository and organization level monitoring
 - ⌨️ Interactive TUI with keyboard navigation
 
+<img width="904" height="195" alt="スクリーンショット 2025-11-03 16 14 13" src="https://github.com/user-attachments/assets/4d45ea0c-3374-4d16-a264-d478fdee290b" />
+
 ## Installation
 
 ```bash
