@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 )
@@ -43,4 +44,9 @@ func (s *StubRunnerRepository) GetActiveJobs(_ context.Context, _, _, _ string) 
 		return nil, s.GetActiveJobsError
 	}
 	return s.Jobs, nil
+}
+
+// GetCurrentTime returns the current time for testing
+func (s *StubRunnerRepository) GetCurrentTime() time.Time {
+	return time.Now()
 }
