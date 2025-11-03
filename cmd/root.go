@@ -44,7 +44,7 @@ func init() {
 
 func runMonitor(_ *cobra.Command, _ []string) error {
 	// Create infrastructure layer (GitHub client)
-	client, err := github.NewClient()
+	runnerRepo, err := github.NewRunnerRepository()
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
 	}
@@ -70,7 +70,7 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 	}
 
 	// Create use case with dependencies
-	monitorUseCase := usecase.NewMonitorRunnersUseCase(client)
+	monitorUseCase := usecase.NewRunnerMonitor(runnerRepo)
 
 	// Create presentation layer (TUI) with use case
 	model := presentation.NewModel(monitorUseCase, owner, repoName, orgName)

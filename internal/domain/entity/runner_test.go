@@ -70,11 +70,11 @@ func TestRunner(t *testing.T) {
 
 func TestRunnerMethods(t *testing.T) {
 	tests := []struct {
-		name      string
-		status    RunnerStatus
-		isOnline  bool
-		isIdle    bool
-		isActive  bool
+		name     string
+		status   RunnerStatus
+		isOnline bool
+		isIdle   bool
+		isActive bool
 	}{
 		{
 			name:     "idle runner",

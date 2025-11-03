@@ -8,22 +8,20 @@ import (
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/value_object"
 )
 
-// MonitorRunnersUseCase handles the business logic for monitoring runners
-type MonitorRunnersUseCase struct {
+// RunnerMonitor handles the business logic for monitoring runners
+type RunnerMonitor struct {
 	runnerRepo repository.RunnerRepository
 }
 
-// NewMonitorRunnersUseCase creates a new MonitorRunnersUseCase
-func NewMonitorRunnersUseCase(
-	runnerRepo repository.RunnerRepository,
-) *MonitorRunnersUseCase {
-	return &MonitorRunnersUseCase{
+// NewRunnerMonitor creates a new RunnerMonitor
+func NewRunnerMonitor(runnerRepo repository.RunnerRepository) *RunnerMonitor {
+	return &RunnerMonitor{
 		runnerRepo: runnerRepo,
 	}
 }
 
 // Execute retrieves runners and jobs, and updates runner status
-func (u *MonitorRunnersUseCase) Execute(ctx context.Context, owner, repo, org string) (*value_object.MonitorData, error) {
+func (u *RunnerMonitor) Execute(ctx context.Context, owner, repo, org string) (*value_object.MonitorData, error) {
 	// Fetch runners
 	runners, err := u.runnerRepo.GetRunners(ctx, owner, repo, org)
 	if err != nil {
