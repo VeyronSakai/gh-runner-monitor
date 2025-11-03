@@ -129,7 +129,10 @@ func (m *Model) openJobLog() tea.Cmd {
 			return nil
 		}
 
-		_ = cmd.Start()
+		if err := cmd.Start(); err != nil {
+			return value_object.DataMsg{Err: err}
+		}
+		
 		return nil
 	}
 }
