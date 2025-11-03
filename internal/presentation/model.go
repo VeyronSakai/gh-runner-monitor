@@ -13,7 +13,7 @@ import (
 // Model represents the TUI application state
 type Model struct {
 	table          table.Model
-	useCase        *usecase.MonitorRunnersUseCase
+	useCase        *usecase.RunnerMonitor
 	owner          string
 	repo           string
 	org            string
@@ -28,7 +28,7 @@ type Model struct {
 }
 
 // NewModel creates a new TUI model
-func NewModel(useCase *usecase.MonitorRunnersUseCase, owner, repo, org string) *Model {
+func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string) *Model {
 	columns := []table.Column{
 		{Title: "Runner Name", Width: 25},
 		{Title: "Status", Width: 12},
