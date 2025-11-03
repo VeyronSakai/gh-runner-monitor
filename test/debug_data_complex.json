@@ -1,0 +1,122 @@
+{
+  "CurrentTime": "2025-11-03T12:10:00Z",
+  "runners": [
+    {
+      "ID": 1,
+      "Name": "prod-runner-01",
+      "Status": "Active",
+      "Labels": ["self-hosted", "linux", "x64", "production"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T12:00:00Z"
+    },
+    {
+      "ID": 2,
+      "Name": "prod-runner-02",
+      "Status": "Active",
+      "Labels": ["self-hosted", "linux", "x64", "production"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T12:01:00Z"
+    },
+    {
+      "ID": 3,
+      "Name": "staging-runner-01",
+      "Status": "Idle",
+      "Labels": ["self-hosted", "linux", "x64", "staging"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T12:05:00Z"
+    },
+    {
+      "ID": 4,
+      "Name": "dev-runner-01",
+      "Status": "Idle",
+      "Labels": ["self-hosted", "macos", "arm64", "development"],
+      "OS": "macos",
+      "UpdatedAt": "2025-11-03T11:50:00Z"
+    },
+    {
+      "ID": 5,
+      "Name": "windows-runner-01",
+      "Status": "Offline",
+      "Labels": ["self-hosted", "windows", "x64"],
+      "OS": "windows",
+      "UpdatedAt": "2025-11-03T08:00:00Z"
+    },
+    {
+      "ID": 6,
+      "Name": "gpu-runner-01",
+      "Status": "Active",
+      "Labels": ["self-hosted", "linux", "x64", "gpu"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T12:02:00Z"
+    }
+  ],
+  "jobs": [
+    {
+      "ID": 201,
+      "RunID": 2001,
+      "Name": "Deploy Production",
+      "Status": "in_progress",
+      "RunnerID": 1,
+      "RunnerName": "prod-runner-01",
+      "StartedAt": "2025-11-03T12:00:30Z",
+      "WorkflowName": "Production Deployment",
+      "Repository": "company/api-service"
+    },
+    {
+      "ID": 202,
+      "RunID": 2002,
+      "Name": "Database Migration",
+      "Status": "in_progress",
+      "RunnerID": 2,
+      "RunnerName": "prod-runner-02",
+      "StartedAt": "2025-11-03T12:01:15Z",
+      "WorkflowName": "Production Deployment",
+      "Repository": "company/api-service"
+    },
+    {
+      "ID": 203,
+      "RunID": 2003,
+      "Name": "ML Model Training",
+      "Status": "in_progress",
+      "RunnerID": 6,
+      "RunnerName": "gpu-runner-01",
+      "StartedAt": "2025-11-03T12:02:00Z",
+      "WorkflowName": "ML Pipeline",
+      "Repository": "company/ml-models"
+    },
+    {
+      "ID": 204,
+      "RunID": 2004,
+      "Name": "Integration Tests",
+      "Status": "queued",
+      "RunnerID": null,
+      "RunnerName": null,
+      "StartedAt": null,
+      "WorkflowName": "Staging Tests",
+      "Repository": "company/frontend-app"
+    },
+    {
+      "ID": 205,
+      "RunID": 2005,
+      "Name": "Build Mobile App",
+      "Status": "queued",
+      "RunnerID": null,
+      "RunnerName": null,
+      "StartedAt": null,
+      "WorkflowName": "Mobile CI",
+      "Repository": "company/mobile-app"
+    },
+    {
+      "ID": 206,
+      "RunID": 2006,
+      "Name": "Windows Build",
+      "Status": "queued",
+      "RunnerID": null,
+      "RunnerName": null,
+      "StartedAt": null,
+      "WorkflowName": "Desktop App",
+      "Repository": "company/desktop-client"
+    }
+  ]
+}
+

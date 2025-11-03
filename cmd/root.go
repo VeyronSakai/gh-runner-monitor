@@ -5,18 +5,21 @@ import (
 	"os"
 	"strings"
 
+	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/repository"
+	"github.com/VeyronSakai/gh-runner-monitor/internal/infrastructure/debug"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/infrastructure/github"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/presentation"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/cli/go-gh/v2/pkg/repository"
+	ghrepo "github.com/cli/go-gh/v2/pkg/repository"
 	"github.com/spf13/cobra"
 )
 
 var (
-	org      string
-	repo     string
-	interval int
+	org       string
+	repo      string
+	interval  int
+	debugPath string
 )
 
 var rootCmd = &cobra.Command{
@@ -40,13 +43,26 @@ func init() {
 	rootCmd.Flags().StringVar(&org, "org", "", "Monitor runners for an organization")
 	rootCmd.Flags().StringVar(&repo, "repo", "", "Monitor runners for a specific repository (owner/repo)")
 	rootCmd.Flags().IntVar(&interval, "interval", 5, "Update interval in seconds")
+	rootCmd.Flags().StringVar(&debugPath, "debug", "", "Debug mode: path to JSON file with mock runner data")
 }
 
 func runMonitor(_ *cobra.Command, _ []string) error {
-	// Create infrastructure layer (GitHub client)
-	runnerRepo, err := github.NewRunnerRepository()
-	if err != nil {
-		return fmt.Errorf("failed to create GitHub client: %w", err)
+	var runnerRepo repository.RunnerRepository
+	var err error
+
+	// Check if debug mode is enabled
+	if debugPath != "" {
+		// Use debug repository with JSON data
+		runnerRepo, err = debug.NewRunnerRepository(debugPath)
+		if err != nil {
+			return fmt.Errorf("failed to create debug repository: %w", err)
+		}
+	} else {
+		// Create infrastructure layer (GitHub client)
+		runnerRepo, err = github.NewRunnerRepository()
+		if err != nil {
+			return fmt.Errorf("failed to create GitHub client: %w", err)
+		}
 	}
 
 	var owner, repoName, orgName string
@@ -61,12 +77,18 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 		owner = parts[0]
 		repoName = parts[1]
 	} else {
-		currentRepo, err := repository.Current()
-		if err != nil {
-			return fmt.Errorf("not in a git repository and no --repo or --org flag specified")
+		// In debug mode, we don't need to fetch current repository
+		if debugPath != "" {
+			owner = "owner"
+			repoName = "repo"
+		} else {
+			currentRepo, err := ghrepo.Current()
+			if err != nil {
+				return fmt.Errorf("not in a git repository and no --repo or --org flag specified")
+			}
+			owner = currentRepo.Owner
+			repoName = currentRepo.Name
 		}
-		owner = currentRepo.Owner
-		repoName = currentRepo.Name
 	}
 
 	// Create use case with dependencies

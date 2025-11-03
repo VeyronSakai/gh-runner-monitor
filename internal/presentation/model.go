@@ -52,6 +52,7 @@ type Model struct {
 	org            string
 	runners        []*entity.Runner
 	jobs           []*entity.Job
+	currentTime    time.Time
 	lastUpdate     time.Time
 	updateInterval time.Duration
 	quitting       bool

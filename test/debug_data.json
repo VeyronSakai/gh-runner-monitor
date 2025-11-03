@@ -1,0 +1,92 @@
+{
+  "CurrentTime": "2025-11-03T10:35:00Z",
+  "runners": [
+    {
+      "ID": 1,
+      "Name": "runner-01",
+      "Status": "Idle",
+      "Labels": ["self-hosted", "linux", "x64"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T10:30:00Z"
+    },
+    {
+      "ID": 2,
+      "Name": "runner-02",
+      "Status": "Active",
+      "Labels": ["self-hosted", "linux", "x64", "production"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T10:25:00Z"
+    },
+    {
+      "ID": 3,
+      "Name": "runner-03",
+      "Status": "Offline",
+      "Labels": ["self-hosted", "macos", "arm64"],
+      "OS": "macos",
+      "UpdatedAt": "2025-11-03T09:00:00Z"
+    },
+    {
+      "ID": 4,
+      "Name": "runner-04",
+      "Status": "Active",
+      "Labels": ["self-hosted", "linux", "x64", "staging"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T10:28:00Z"
+    },
+    {
+      "ID": 5,
+      "Name": "runner-05",
+      "Status": "Idle",
+      "Labels": ["self-hosted", "windows", "x64"],
+      "OS": "windows",
+      "UpdatedAt": "2025-11-03T10:31:00Z"
+    }
+  ],
+  "jobs": [
+    {
+      "ID": 101,
+      "RunID": 1001,
+      "Name": "Build and Test",
+      "Status": "in_progress",
+      "RunnerID": 2,
+      "RunnerName": "runner-02",
+      "StartedAt": "2025-11-03T10:25:30Z",
+      "WorkflowName": "CI",
+      "Repository": "myorg/backend-service"
+    },
+    {
+      "ID": 102,
+      "RunID": 1002,
+      "Name": "Deploy to Staging",
+      "Status": "in_progress",
+      "RunnerID": 4,
+      "RunnerName": "runner-04",
+      "StartedAt": "2025-11-03T10:28:15Z",
+      "WorkflowName": "CD",
+      "Repository": "myorg/frontend-app"
+    },
+    {
+      "ID": 103,
+      "RunID": 1003,
+      "Name": "Run E2E Tests",
+      "Status": "queued",
+      "RunnerID": null,
+      "RunnerName": null,
+      "StartedAt": null,
+      "WorkflowName": "E2E Tests",
+      "Repository": "myorg/e2e-tests"
+    },
+    {
+      "ID": 104,
+      "RunID": 1004,
+      "Name": "Security Scan",
+      "Status": "queued",
+      "RunnerID": null,
+      "RunnerName": null,
+      "StartedAt": null,
+      "WorkflowName": "Security",
+      "Repository": "myorg/backend-service"
+    }
+  ]
+}
+

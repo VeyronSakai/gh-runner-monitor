@@ -43,6 +43,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.runners = msg.Data.Runners
 			m.jobs = msg.Data.Jobs
+			m.currentTime = msg.Data.CurrentTime
 			m.lastUpdate = time.Now()
 			m.err = nil
 			m.updateTableRows()
@@ -70,7 +71,7 @@ func (m *Model) updateTableRows() {
 		for _, job := range m.jobs {
 			if job.IsAssignedToRunner(runner.ID) {
 				jobName = fmt.Sprintf("%s (%s)", job.Name, job.WorkflowName)
-				execTime = formatDuration(job.GetExecutionDuration())
+				execTime = formatDuration(job.GetExecutionDurationAt(m.currentTime))
 				break
 			}
 		}

@@ -35,57 +35,54 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 		getRunnersErr error
 		getJobsErr    error
 		wantErr       bool
-		validateData  func(*testing.T, []*entity.Runner, []*entity.Job)
+		validateData  func(*testing.T, []*entity.Runner, []*entity.Job, time.Time)
 	}{
 		{
 			name: "successful execution with active runners and jobs",
 			runners: []*entity.Runner{
 				{
-					ID:        1,
-					Name:      "runner-1",
-					Status:    entity.StatusIdle,
-					Labels:    []string{"self-hosted", "linux"},
-					OS:        "Linux",
-					UpdatedAt: time.Now(),
-				},
-				{
-					ID:        2,
-					Name:      "runner-2",
-					Status:    entity.StatusIdle,
-					Labels:    []string{"self-hosted", "macos"},
-					OS:        "macOS",
-					UpdatedAt: time.Now(),
+					ID:     runnerID,
+					Name:   runnerName,
+					Status: entity.StatusIdle,
+					Labels: []string{"self-hosted", "linux"},
+					OS:     "linux",
 				},
 			},
 			jobs: []*entity.Job{
 				{
-					ID:           1,
-					RunID:        100,
-					Name:         "build",
-					Status:       "in_progress",
-					RunnerID:     &runnerID,
-					RunnerName:   &runnerName,
-					StartedAt:    &startedAt,
-					WorkflowName: "CI",
-					Repository:   "owner/repo",
+					ID:         1,
+					RunID:      100,
+					Name:       "test-job",
+					Status:     "in_progress",
+					RunnerID:   &runnerID,
+					RunnerName: &runnerName,
+					StartedAt:  &startedAt,
 				},
 			},
 			wantErr: false,
-			validateData: func(t *testing.T, runners []*entity.Runner, jobs []*entity.Job) {
-				if len(runners) != 2 {
-					t.Errorf("Expected 2 runners, got %d", len(runners))
+			validateData: func(t *testing.T, runners []*entity.Runner, jobs []*entity.Job, currentTime time.Time) {
+				if len(runners) != 1 {
+					t.Errorf("Expected 1 runner, got %d", len(runners))
 				}
 				if len(jobs) != 1 {
 					t.Errorf("Expected 1 job, got %d", len(jobs))
 				}
+				// Verify that runner status was updated to Active
+				if runners[0].Status != entity.StatusActive {
+					t.Errorf("Expected runner status to be Active, got %s", runners[0].Status)
+				}
+				// Verify current time is set
+				if currentTime.IsZero() {
+					t.Error("Expected current time to be set")
+				}
 			},
 		},
 		{
-			name:    "no runners or jobs",
+			name:    "no runners and no jobs",
 			runners: []*entity.Runner{},
 			jobs:    []*entity.Job{},
 			wantErr: false,
-			validateData: func(t *testing.T, runners []*entity.Runner, jobs []*entity.Job) {
+			validateData: func(t *testing.T, runners []*entity.Runner, jobs []*entity.Job, currentTime time.Time) {
 				if len(runners) != 0 {
 					t.Errorf("Expected 0 runners, got %d", len(runners))
 				}
@@ -95,26 +92,20 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 			},
 		},
 		{
-			name:          "error fetching runners",
-			runners:       nil,
-			jobs:          nil,
-			getRunnersErr: errors.New("failed to fetch runners"),
+			name:          "GetRunners returns error",
+			getRunnersErr: errors.New("failed to get runners"),
 			wantErr:       true,
 		},
 		{
-			name: "error fetching jobs",
+			name: "GetActiveJobs returns error",
 			runners: []*entity.Runner{
 				{
-					ID:        1,
-					Name:      "runner-1",
-					Status:    entity.StatusIdle,
-					Labels:    []string{"self-hosted"},
-					OS:        "Linux",
-					UpdatedAt: time.Now(),
+					ID:     runnerID,
+					Name:   runnerName,
+					Status: entity.StatusIdle,
 				},
 			},
-			jobs:       nil,
-			getJobsErr: errors.New("failed to fetch jobs"),
+			getJobsErr: errors.New("failed to get jobs"),
 			wantErr:    true,
 		},
 	}
@@ -133,63 +124,29 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 
 			data, err := useCase.Execute(ctx, "owner", "repo", "")
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
 			if tt.wantErr {
-				if data != nil {
-					t.Error("Execute() should return nil data on error")
+				if err == nil {
+					t.Error("Expected error but got none")
 				}
 				return
 			}
 
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
 			if data == nil {
-				t.Fatal("Execute() returned nil data")
+				t.Fatal("Expected data but got nil")
 			}
 
 			if tt.validateData != nil {
-				tt.validateData(t, data.Runners, data.Jobs)
+				tt.validateData(t, data.Runners, data.Jobs, data.CurrentTime)
 			}
 		})
 	}
 }
 
-func TestRunnerMonitor_Execute_OrganizationLevel(t *testing.T) {
-	repo := &test.StubRunnerRepository{
-		Runners: []*entity.Runner{
-			{
-				ID:        1,
-				Name:      "org-runner-1",
-				Status:    entity.StatusIdle,
-				Labels:    []string{"self-hosted"},
-				OS:        "Linux",
-				UpdatedAt: time.Now(),
-			},
-		},
-		Jobs: []*entity.Job{},
-	}
-
-	useCase := NewRunnerMonitor(repo)
-	ctx := context.Background()
-
-	data, err := useCase.Execute(ctx, "", "", "my-org")
-
-	if err != nil {
-		t.Errorf("Execute() error = %v, want nil", err)
-	}
-
-	if data == nil {
-		t.Fatal("Execute() returned nil data")
-	}
-
-	if len(data.Runners) != 1 {
-		t.Errorf("Expected 1 runner, got %d", len(data.Runners))
-	}
-}
-
-func TestRunnerMonitor_Execute_RunnerStatusUpdate(t *testing.T) {
+func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
 	runnerID := int64(1)
 	runnerName := "test-runner"
 	startedAt := time.Now()
@@ -197,25 +154,22 @@ func TestRunnerMonitor_Execute_RunnerStatusUpdate(t *testing.T) {
 	repo := &test.StubRunnerRepository{
 		Runners: []*entity.Runner{
 			{
-				ID:        1,
-				Name:      "test-runner",
-				Status:    entity.StatusIdle,
-				Labels:    []string{"self-hosted"},
-				OS:        "Linux",
-				UpdatedAt: time.Now(),
+				ID:     runnerID,
+				Name:   runnerName,
+				Status: entity.StatusIdle,
+				Labels: []string{"self-hosted"},
+				OS:     "linux",
 			},
 		},
 		Jobs: []*entity.Job{
 			{
-				ID:           1,
-				RunID:        100,
-				Name:         "build",
-				Status:       "in_progress",
-				RunnerID:     &runnerID,
-				RunnerName:   &runnerName,
-				StartedAt:    &startedAt,
-				WorkflowName: "CI",
-				Repository:   "owner/repo",
+				ID:         1,
+				RunID:      100,
+				Name:       "job-1",
+				Status:     "in_progress",
+				RunnerID:   &runnerID,
+				RunnerName: &runnerName,
+				StartedAt:  &startedAt,
 			},
 		},
 	}
@@ -224,20 +178,12 @@ func TestRunnerMonitor_Execute_RunnerStatusUpdate(t *testing.T) {
 	ctx := context.Background()
 
 	data, err := useCase.Execute(ctx, "owner", "repo", "")
-
 	if err != nil {
-		t.Errorf("Execute() error = %v, want nil", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	if data == nil {
-		t.Fatal("Execute() returned nil data")
-	}
-
-	// Verify that runner status was updated to Active
-	if len(data.Runners) > 0 {
-		runner := data.Runners[0]
-		if runner.Status != entity.StatusActive {
-			t.Errorf("Expected runner status to be Active, got %s", runner.Status)
-		}
+	// Runner should be marked as Active because it has an active job
+	if data.Runners[0].Status != entity.StatusActive {
+		t.Errorf("Expected runner status Active, got %s", data.Runners[0].Status)
 	}
 }

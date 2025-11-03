@@ -1,0 +1,27 @@
+{
+  "CurrentTime": "2025-11-03T10:05:00Z",
+  "runners": [
+    {
+      "ID": 1,
+      "Name": "test-runner",
+      "Status": "Active",
+      "Labels": ["self-hosted", "linux"],
+      "OS": "linux",
+      "UpdatedAt": "2025-11-03T10:00:00Z"
+    }
+  ],
+  "jobs": [
+    {
+      "ID": 1,
+      "RunID": 100,
+      "Name": "Test Job",
+      "Status": "in_progress",
+      "RunnerID": 1,
+      "RunnerName": "test-runner",
+      "StartedAt": "2025-11-03T10:00:30Z",
+      "WorkflowName": "Test Workflow",
+      "Repository": "test/repo"
+    }
+  ]
+}
+
