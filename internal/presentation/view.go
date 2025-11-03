@@ -19,7 +19,7 @@ func (m *Model) View() string {
 	} else {
 		header = fmt.Sprintf("GitHub Runners Monitor - Repository: %s/%s\n", m.owner, m.repo)
 	}
-	header += fmt.Sprintf("Last Updated: %s | Press 'q' to quit, 'r' to refresh\n\n",
+	header += fmt.Sprintf("Last Updated: %s | Press 'q' to quit, 'r' to refresh, 'enter' to open job log\n\n",
 		m.lastUpdate.Format("15:04:05"))
 
 	if m.err != nil {

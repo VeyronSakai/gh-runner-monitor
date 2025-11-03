@@ -194,6 +194,7 @@ func (r *RunnerRepositoryImpl) getJobsForRun(run workflowRun, org, owner, repo s
 				StartedAt:    job.StartedAt,
 				WorkflowName: run.Name,
 				Repository:   run.Repository.FullName,
+				HtmlUrl:      job.HtmlUrl,
 			})
 		}
 	}

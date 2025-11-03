@@ -3,6 +3,8 @@ package presentation
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/value_object"
@@ -27,6 +29,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "r":
 			return m, m.fetchData()
+		case "enter", "return":
+			return m, m.openJobLog()
 		}
 
 	case time.Time:
@@ -84,6 +88,50 @@ func (m *Model) updateTableRows() {
 		})
 	}
 	m.table.SetRows(rows)
+}
+
+// openJobLog opens the job log page in the browser for the currently selected row
+func (m *Model) openJobLog() tea.Cmd {
+	return func() tea.Msg {
+		// Get the selected row index
+		selectedRow := m.table.Cursor()
+		if selectedRow < 0 || selectedRow >= len(m.runners) {
+			return nil
+		}
+
+		// Get the runner for the selected row
+		runner := m.runners[selectedRow]
+
+		// Find the active job for this runner
+		var jobURL string
+		for _, job := range m.jobs {
+			if job.IsAssignedToRunner(runner.ID) {
+				jobURL = job.HtmlUrl
+				break
+			}
+		}
+
+		// If no job URL found, do nothing
+		if jobURL == "" {
+			return nil
+		}
+
+		// Open the URL in the default browser
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "darwin":
+			cmd = exec.Command("open", jobURL)
+		case "linux":
+			cmd = exec.Command("xdg-open", jobURL)
+		case "windows":
+			cmd = exec.Command("start", jobURL)
+		default:
+			return nil
+		}
+
+		_ = cmd.Start()
+		return nil
+	}
 }
 
 // fetchData fetches runners and jobs data using the use case

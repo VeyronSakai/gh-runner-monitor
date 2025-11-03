@@ -52,7 +52,8 @@
       "RunnerName": "runner-02",
       "StartedAt": "2025-11-03T10:25:30Z",
       "WorkflowName": "CI",
-      "Repository": "myorg/backend-service"
+      "Repository": "myorg/backend-service",
+      "HTMLURL": "https://github.com/myorg/backend-service/actions/runs/1001/job/101"
     },
     {
       "ID": 102,
@@ -63,7 +64,8 @@
       "RunnerName": "runner-04",
       "StartedAt": "2025-11-03T10:28:15Z",
       "WorkflowName": "CD",
-      "Repository": "myorg/frontend-app"
+      "Repository": "myorg/frontend-app",
+      "HTMLURL": "https://github.com/myorg/frontend-app/actions/runs/1002/job/102"
     },
     {
       "ID": 103,
@@ -74,7 +76,8 @@
       "RunnerName": null,
       "StartedAt": null,
       "WorkflowName": "E2E Tests",
-      "Repository": "myorg/e2e-tests"
+      "Repository": "myorg/e2e-tests",
+      "HTMLURL": "https://github.com/myorg/e2e-tests/actions/runs/1003/job/103"
     },
     {
       "ID": 104,
@@ -85,7 +88,8 @@
       "RunnerName": null,
       "StartedAt": null,
       "WorkflowName": "Security",
-      "Repository": "myorg/backend-service"
+      "Repository": "myorg/backend-service",
+      "HTMLURL": "https://github.com/myorg/backend-service/actions/runs/1004/job/104"
     }
   ]
 }
