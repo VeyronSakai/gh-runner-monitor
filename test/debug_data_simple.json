@@ -20,7 +20,8 @@
       "RunnerName": "test-runner",
       "StartedAt": "2025-11-03T10:00:30Z",
       "WorkflowName": "Test Workflow",
-      "Repository": "test/repo"
+      "Repository": "test/repo",
+      "HTMLURL": "https://github.com/test/repo/actions/runs/100/job/1"
     }
   ]
 }

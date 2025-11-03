@@ -58,4 +58,5 @@ type jobResponse struct {
 	CompletedAt *time.Time `json:"completed_at"`
 	RunnerID    *int64     `json:"runner_id"`
 	RunnerName  *string    `json:"runner_name"`
+	HtmlUrl     string     `json:"html_url"`
 }

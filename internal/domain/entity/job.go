@@ -13,6 +13,7 @@ type Job struct {
 	StartedAt    *time.Time
 	WorkflowName string
 	Repository   string
+	HtmlUrl      string
 }
 
 // IsRunning returns true if the job is currently running

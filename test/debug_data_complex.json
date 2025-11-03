@@ -60,7 +60,8 @@
       "RunnerName": "prod-runner-01",
       "StartedAt": "2025-11-03T12:00:30Z",
       "WorkflowName": "Production Deployment",
-      "Repository": "company/api-service"
+      "Repository": "company/api-service",
+      "HTMLURL": "https://github.com/company/api-service/actions/runs/2001/job/201"
     },
     {
       "ID": 202,
@@ -71,7 +72,8 @@
       "RunnerName": "prod-runner-02",
       "StartedAt": "2025-11-03T12:01:15Z",
       "WorkflowName": "Production Deployment",
-      "Repository": "company/api-service"
+      "Repository": "company/api-service",
+      "HTMLURL": "https://github.com/company/api-service/actions/runs/2002/job/202"
     },
     {
       "ID": 203,
@@ -82,7 +84,8 @@
       "RunnerName": "gpu-runner-01",
       "StartedAt": "2025-11-03T12:02:00Z",
       "WorkflowName": "ML Pipeline",
-      "Repository": "company/ml-models"
+      "Repository": "company/ml-models",
+      "HTMLURL": "https://github.com/company/ml-models/actions/runs/2003/job/203"
     },
     {
       "ID": 204,
@@ -93,7 +96,8 @@
       "RunnerName": null,
       "StartedAt": null,
       "WorkflowName": "Staging Tests",
-      "Repository": "company/frontend-app"
+      "Repository": "company/frontend-app",
+      "HTMLURL": "https://github.com/company/frontend-app/actions/runs/2004/job/204"
     },
     {
       "ID": 205,
@@ -104,7 +108,8 @@
       "RunnerName": null,
       "StartedAt": null,
       "WorkflowName": "Mobile CI",
-      "Repository": "company/mobile-app"
+      "Repository": "company/mobile-app",
+      "HTMLURL": "https://github.com/company/mobile-app/actions/runs/2005/job/205"
     },
     {
       "ID": 206,
@@ -115,7 +120,8 @@
       "RunnerName": null,
       "StartedAt": null,
       "WorkflowName": "Desktop App",
-      "Repository": "company/desktop-client"
+      "Repository": "company/desktop-client",
+      "HTMLURL": "https://github.com/company/desktop-client/actions/runs/2006/job/206"
     }
   ]
 }
