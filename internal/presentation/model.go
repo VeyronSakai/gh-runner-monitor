@@ -62,7 +62,7 @@ type Model struct {
 }
 
 // NewModel creates a new TUI model
-func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string) *Model {
+func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string, intervalSeconds int) *Model {
 	// Start with minimum column widths - will be updated when WindowSizeMsg is received
 	columns := []table.Column{
 		{Title: columnTitleRunnerName, Width: minWidthRunnerName},
@@ -98,7 +98,7 @@ func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string) *Model {
 		owner:          owner,
 		repo:           repo,
 		org:            org,
-		updateInterval: 5 * time.Second,
+		updateInterval: time.Duration(intervalSeconds) * time.Second,
 		width:          defaultTerminalWidth,
 		height:         defaultTerminalHeight,
 	}
