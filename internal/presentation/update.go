@@ -12,14 +12,12 @@ import (
 
 // Update handles incoming events and updates the model
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	var cmds []tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.table.SetHeight(msg.Height - 10)
+		m.table.SetHeight(getCalculatedTableHeight(msg.Height))
+		m.updateColumnWidths()
 		return m, nil
 
 	case tea.KeyMsg:
@@ -52,10 +50,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.table, cmd = m.table.Update(msg)
-	cmds = append(cmds, cmd)
+	var curCmd tea.Cmd
+	m.table, curCmd = m.table.Update(msg)
 
-	return m, tea.Batch(cmds...)
+	return m, curCmd
 }
 
 // updateTableRows updates the table with the current runner and job data
@@ -92,11 +90,17 @@ func (m *Model) fetchData() tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 
-		data, err := m.useCase.Execute(ctx, m.owner, m.repo, m.org)
+		data, err := m.runnerMonitor.Execute(ctx, m.owner, m.repo, m.org)
 		if err != nil {
 			return value_object.DataMsg{Err: err}
 		}
 
 		return value_object.DataMsg{Data: data}
 	}
+}
+
+// updateColumnWidths adjusts column widths based on terminal width
+func (m *Model) updateColumnWidths() {
+	columns := getCalculatedColumnWidths(m.width)
+	m.table.SetColumns(columns)
 }
