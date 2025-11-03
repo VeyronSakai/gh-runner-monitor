@@ -124,7 +124,7 @@ func (m *Model) openJobLog() tea.Cmd {
 		case "linux":
 			cmd = exec.Command("xdg-open", jobURL)
 		case "windows":
-			cmd = exec.Command("start", jobURL)
+			cmd = exec.Command("cmd", "/c", "start", jobURL)
 		default:
 			return nil
 		}
