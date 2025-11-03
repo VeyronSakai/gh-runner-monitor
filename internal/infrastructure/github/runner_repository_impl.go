@@ -22,7 +22,7 @@ type RunnerRepositoryImpl struct {
 func NewRunnerRepository() (domainrepo.RunnerRepository, error) {
 	restClient, err := api.DefaultRESTClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create REST client: %w", err)
+		return nil, fmt.Errorf("failed to create REST client: %w\nPlease run 'gh auth login' to authenticate with GitHub", err)
 	}
 
 	return &RunnerRepositoryImpl{
