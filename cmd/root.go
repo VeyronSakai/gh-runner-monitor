@@ -42,7 +42,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&org, "org", "", "Monitor runners for an organization")
 	rootCmd.Flags().StringVar(&repo, "repo", "", "Monitor runners for a specific repository (owner/repo)")
-	rootCmd.Flags().IntVar(&interval, "interval", 1, "Update interval in seconds")
+	rootCmd.Flags().IntVar(&interval, "interval", 5, "Update interval in seconds")
 	rootCmd.Flags().StringVar(&debugPath, "debug", "", "Debug mode: path to JSON file with mock runner data")
 }
 
