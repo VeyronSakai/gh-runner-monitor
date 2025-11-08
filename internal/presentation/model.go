@@ -30,7 +30,7 @@ const (
 	borderPadding = 10
 
 	// Space reserved for header and footer in height calculation
-	headerFooterHeight = 10
+	headerFooterHeight = 5
 
 	// Proportions for distributing extra width
 	ratioRunnerName = 0.25
