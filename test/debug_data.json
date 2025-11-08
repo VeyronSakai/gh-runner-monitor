@@ -46,12 +46,12 @@
     {
       "ID": 101,
       "RunID": 1001,
-      "Name": "Build and Test",
+      "Name": "matrix-test (job-a)",
       "Status": "in_progress",
-      "RunnerID": 2,
+      "RunnerID": null,
       "RunnerName": "runner-02",
       "StartedAt": "2025-11-03T10:25:30Z",
-      "WorkflowName": "CI",
+      "WorkflowName": "Matrix CI",
       "Repository": "myorg/backend-service",
       "HTMLURL": "https://github.com/myorg/backend-service/actions/runs/1001/job/101"
     },
@@ -69,27 +69,27 @@
     },
     {
       "ID": 103,
-      "RunID": 1003,
-      "Name": "Run E2E Tests",
+      "RunID": 1001,
+      "Name": "matrix-test (job-b)",
       "Status": "queued",
       "RunnerID": null,
       "RunnerName": null,
       "StartedAt": null,
-      "WorkflowName": "E2E Tests",
-      "Repository": "myorg/e2e-tests",
-      "HTMLURL": "https://github.com/myorg/e2e-tests/actions/runs/1003/job/103"
+      "WorkflowName": "Matrix CI",
+      "Repository": "myorg/backend-service",
+      "HTMLURL": "https://github.com/myorg/backend-service/actions/runs/1001/job/103"
     },
     {
       "ID": 104,
-      "RunID": 1004,
-      "Name": "Security Scan",
+      "RunID": 1001,
+      "Name": "matrix-test (job-c)",
       "Status": "queued",
       "RunnerID": null,
       "RunnerName": null,
       "StartedAt": null,
-      "WorkflowName": "Security",
+      "WorkflowName": "Matrix CI",
       "Repository": "myorg/backend-service",
-      "HTMLURL": "https://github.com/myorg/backend-service/actions/runs/1004/job/104"
+      "HTMLURL": "https://github.com/myorg/backend-service/actions/runs/1001/job/104"
     }
   ]
 }

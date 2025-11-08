@@ -15,7 +15,7 @@ func UpdateRunnerStatus(runners []*entity.Runner, jobs []*entity.Job) {
 
 		// Check if this runner has an active job
 		for _, job := range jobs {
-			if job.IsAssignedToRunner(runner.ID) && job.IsRunning() {
+			if job.IsAssignedToRunner(runner.Name) && job.IsRunning() {
 				runner.Status = entity.StatusActive
 				break
 			}

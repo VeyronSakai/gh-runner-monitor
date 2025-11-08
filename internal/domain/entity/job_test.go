@@ -5,60 +5,6 @@ import (
 	"time"
 )
 
-func TestJob(t *testing.T) {
-	t.Run("create new job", func(t *testing.T) {
-		now := time.Now()
-		runnerID := int64(1)
-		runnerName := "test-runner"
-
-		job := &Job{
-			ID:           100,
-			RunID:        200,
-			Name:         "build",
-			Status:       "in_progress",
-			RunnerID:     &runnerID,
-			RunnerName:   &runnerName,
-			StartedAt:    &now,
-			WorkflowName: "CI",
-			Repository:   "owner/repo",
-		}
-
-		if job.ID != 100 {
-			t.Errorf("expected ID 100, got %d", job.ID)
-		}
-
-		if job.RunnerID == nil || *job.RunnerID != 1 {
-			t.Errorf("expected RunnerID 1, got %v", job.RunnerID)
-		}
-
-		if job.StartedAt == nil {
-			t.Error("expected StartedAt to be set")
-		}
-	})
-
-	t.Run("job without runner assignment", func(t *testing.T) {
-		job := &Job{
-			ID:           101,
-			RunID:        201,
-			Name:         "test",
-			Status:       "queued",
-			RunnerID:     nil,
-			RunnerName:   nil,
-			StartedAt:    nil,
-			WorkflowName: "CI",
-			Repository:   "owner/repo",
-		}
-
-		if job.RunnerID != nil {
-			t.Errorf("expected RunnerID to be nil, got %v", job.RunnerID)
-		}
-
-		if job.StartedAt != nil {
-			t.Errorf("expected StartedAt to be nil, got %v", job.StartedAt)
-		}
-	})
-}
-
 func TestJobMethods(t *testing.T) {
 	t.Run("IsRunning", func(t *testing.T) {
 		job := &Job{Status: "in_progress"}
@@ -85,36 +31,58 @@ func TestJobMethods(t *testing.T) {
 	})
 
 	t.Run("IsAssignedToRunner", func(t *testing.T) {
-		runnerID := int64(123)
-		job := &Job{RunnerID: &runnerID}
+		runnerName := "test-runner"
+		job := &Job{RunnerName: &runnerName}
 
-		if !job.IsAssignedToRunner(123) {
-			t.Error("expected IsAssignedToRunner(123) to be true")
+		if !job.IsAssignedToRunner("test-runner") {
+			t.Error("expected IsAssignedToRunner('test-runner') to be true")
 		}
 
-		if job.IsAssignedToRunner(456) {
-			t.Error("expected IsAssignedToRunner(456) to be false")
+		if job.IsAssignedToRunner("other-runner") {
+			t.Error("expected IsAssignedToRunner('other-runner') to be false")
 		}
 
-		job.RunnerID = nil
-		if job.IsAssignedToRunner(123) {
-			t.Error("expected IsAssignedToRunner(123) to be false when RunnerID is nil")
+		job.RunnerName = nil
+		if job.IsAssignedToRunner("test-runner") {
+			t.Error("expected IsAssignedToRunner('test-runner') to be false when RunnerName is nil")
 		}
 	})
 
-	t.Run("GetExecutionDuration", func(t *testing.T) {
-		startedAt := time.Now().Add(-5 * time.Minute)
-		job := &Job{StartedAt: &startedAt}
+	t.Run("GetExecutionDurationAt", func(t *testing.T) {
+		t.Run("returns duration when StartedAt is set", func(t *testing.T) {
+			startTime := time.Date(2025, 11, 8, 10, 0, 0, 0, time.UTC)
+			job := &Job{StartedAt: &startTime}
 
-		duration := job.GetExecutionDuration()
-		if duration < 4*time.Minute || duration > 6*time.Minute {
-			t.Errorf("expected duration around 5 minutes, got %v", duration)
-		}
+			currentTime := time.Date(2025, 11, 8, 10, 5, 30, 0, time.UTC)
+			duration := job.GetExecutionDurationAt(currentTime)
 
-		job.StartedAt = nil
-		duration = job.GetExecutionDuration()
-		if duration != 0 {
-			t.Errorf("expected duration to be 0 when StartedAt is nil, got %v", duration)
-		}
+			expected := 5*time.Minute + 30*time.Second
+			if duration != expected {
+				t.Errorf("expected duration %v, got %v", expected, duration)
+			}
+		})
+
+		t.Run("returns zero duration when StartedAt is nil", func(t *testing.T) {
+			job := &Job{StartedAt: nil}
+			currentTime := time.Date(2025, 11, 8, 10, 5, 30, 0, time.UTC)
+			duration := job.GetExecutionDurationAt(currentTime)
+
+			if duration != 0 {
+				t.Errorf("expected duration 0, got %v", duration)
+			}
+		})
+
+		t.Run("handles negative duration when currentTime is before StartedAt", func(t *testing.T) {
+			startTime := time.Date(2025, 11, 8, 10, 5, 0, 0, time.UTC)
+			job := &Job{StartedAt: &startTime}
+
+			currentTime := time.Date(2025, 11, 8, 10, 0, 0, 0, time.UTC)
+			duration := job.GetExecutionDurationAt(currentTime)
+
+			expected := -5 * time.Minute
+			if duration != expected {
+				t.Errorf("expected duration %v, got %v", expected, duration)
+			}
+		})
 	})
 }

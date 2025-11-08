@@ -108,3 +108,107 @@ func TestView(t *testing.T) {
 		}
 	})
 }
+
+func TestUpdateTableRows_MatrixJobs(t *testing.T) {
+	t.Run("matrix job with RunnerName but no RunnerID", func(t *testing.T) {
+		// Setup test data simulating matrix job scenario
+		runnerName := "test-runner"
+		startedAt := time.Now().Add(-5 * time.Minute)
+
+		runners := []*entity.Runner{
+			{
+				ID:     1,
+				Name:   "test-runner",
+				Status: entity.StatusActive,
+			},
+		}
+
+		jobs := []*entity.Job{
+			{
+				ID:           101,
+				RunID:        1001,
+				Name:         "matrix-test (job-a)",
+				Status:       "in_progress",
+				RunnerID:     nil, // RunnerID is not set yet (matrix job scenario)
+				RunnerName:   &runnerName,
+				StartedAt:    &startedAt,
+				WorkflowName: "Matrix CI",
+			},
+		}
+
+		model := NewModel(nil, "owner", "repo", "", 5)
+		model.runners = runners
+		model.jobs = jobs
+		model.currentTime = time.Now()
+
+		// Call updateTableRows
+		model.updateTableRows()
+
+		// Verify that the job name is displayed (not "-")
+		rows := model.table.Rows()
+		if len(rows) != 1 {
+			t.Fatalf("expected 1 row, got %d", len(rows))
+		}
+
+		jobName := rows[0][2] // Job Name is the 3rd column
+		if jobName == "-" {
+			t.Error("expected job name to be displayed, but got '-'")
+		}
+		if jobName != "matrix-test (job-a) (Matrix CI)" {
+			t.Errorf("expected job name 'matrix-test (job-a) (Matrix CI)', got '%s'", jobName)
+		}
+
+		execTime := rows[0][3] // Execution Time is the 4th column
+		if execTime == "-" {
+			t.Error("expected execution time to be displayed, but got '-'")
+		}
+	})
+
+	t.Run("job with RunnerName matches by name", func(t *testing.T) {
+		// Setup test data with both RunnerID and RunnerName set
+		// Matching should be done by name only, not by ID
+		runnerID := int64(999) // Different ID to ensure matching is by name only
+		runnerName := "test-runner"
+		startedAt := time.Now().Add(-3 * time.Minute)
+
+		runners := []*entity.Runner{
+			{
+				ID:     1,
+				Name:   "test-runner",
+				Status: entity.StatusActive,
+			},
+		}
+
+		jobs := []*entity.Job{
+			{
+				ID:           102,
+				RunID:        1002,
+				Name:         "normal-job",
+				Status:       "in_progress",
+				RunnerID:     &runnerID, // ID doesn't match, but name does
+				RunnerName:   &runnerName,
+				StartedAt:    &startedAt,
+				WorkflowName: "CI",
+			},
+		}
+
+		model := NewModel(nil, "owner", "repo", "", 5)
+		model.runners = runners
+		model.jobs = jobs
+		model.currentTime = time.Now()
+
+		// Call updateTableRows
+		model.updateTableRows()
+
+		// Verify that the job name is displayed (matched by name, not ID)
+		rows := model.table.Rows()
+		if len(rows) != 1 {
+			t.Fatalf("expected 1 row, got %d", len(rows))
+		}
+
+		jobName := rows[0][2]
+		if jobName != "normal-job (CI)" {
+			t.Errorf("expected job name 'normal-job (CI)', got '%s'", jobName)
+		}
+	})
+}

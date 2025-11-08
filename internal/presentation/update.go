@@ -71,9 +71,9 @@ func (m *Model) updateTableRows() {
 		jobName := "-"
 		execTime := "-"
 
-		// Find active job for this runner
+		// Find active job for this runner by matching runner name
 		for _, job := range m.jobs {
-			if job.IsAssignedToRunner(runner.ID) {
+			if job.IsAssignedToRunner(runner.Name) {
 				jobName = fmt.Sprintf("%s (%s)", job.Name, job.WorkflowName)
 				execTime = formatDuration(job.GetExecutionDurationAt(m.currentTime))
 				break
@@ -102,10 +102,10 @@ func (m *Model) openJobLog() tea.Cmd {
 		// Get the runner for the selected row
 		runner := m.runners[selectedRow]
 
-		// Find the active job for this runner
+		// Find the active job for this runner by matching runner name
 		var jobURL string
 		for _, job := range m.jobs {
-			if job.IsAssignedToRunner(runner.ID) {
+			if job.IsAssignedToRunner(runner.Name) {
 				jobURL = job.HtmlUrl
 				break
 			}
@@ -132,7 +132,7 @@ func (m *Model) openJobLog() tea.Cmd {
 		if err := cmd.Start(); err != nil {
 			return value_object.DataMsg{Err: err}
 		}
-		
+
 		return nil
 	}
 }
