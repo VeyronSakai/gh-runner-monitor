@@ -14,8 +14,9 @@ func TestUpdateRunnerStatus(t *testing.T) {
 		}
 
 		runnerID := int64(1)
+		runnerName := "runner-1"
 		jobs := []*entity.Job{
-			{ID: 100, Name: "build", Status: "in_progress", RunnerID: &runnerID},
+			{ID: 100, Name: "build", Status: "in_progress", RunnerID: &runnerID, RunnerName: &runnerName},
 		}
 
 		UpdateRunnerStatus(runners, jobs)
@@ -49,8 +50,9 @@ func TestUpdateRunnerStatus(t *testing.T) {
 		}
 
 		runnerID := int64(1)
+		runnerName := "runner-1"
 		jobs := []*entity.Job{
-			{ID: 100, Name: "build", Status: "in_progress", RunnerID: &runnerID},
+			{ID: 100, Name: "build", Status: "in_progress", RunnerID: &runnerID, RunnerName: &runnerName},
 		}
 
 		UpdateRunnerStatus(runners, jobs)
