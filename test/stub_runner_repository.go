@@ -28,18 +28,14 @@ func NewStubRunnerRepositoryWithError(getRunnersErr, getActiveJobsErr error) *St
 	}
 }
 
-// GetRunners returns the configured runners or error.
-// This is a stub - it simply returns pre-configured data without any behavior verification.
-func (s *StubRunnerRepository) GetRunners(_ context.Context, _, _, _ string) ([]*entity.Runner, error) {
+func (s *StubRunnerRepository) FetchRunners(_ context.Context, _, _, _ string) ([]*entity.Runner, error) {
 	if s.GetRunnersError != nil {
 		return nil, s.GetRunnersError
 	}
 	return s.Runners, nil
 }
 
-// GetActiveJobs returns the configured jobs or error.
-// This is a stub - it simply returns pre-configured data without any behavior verification.
-func (s *StubRunnerRepository) GetActiveJobs(_ context.Context, _, _, _ string) ([]*entity.Job, error) {
+func (s *StubRunnerRepository) FetchActiveJobs(_ context.Context, _, _, _ string) ([]*entity.Job, error) {
 	if s.GetActiveJobsError != nil {
 		return nil, s.GetActiveJobsError
 	}

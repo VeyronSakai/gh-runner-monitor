@@ -51,12 +51,12 @@ func loadData(jsonPath string) (*Data, error) {
 }
 
 // GetRunners returns the runners from the debug data
-func (d *RunnerRepositoryImpl) GetRunners(_ context.Context, _, _, _ string) ([]*entity.Runner, error) {
+func (d *RunnerRepositoryImpl) FetchRunners(_ context.Context, _, _, _ string) ([]*entity.Runner, error) {
 	return d.data.Runners, nil
 }
 
 // GetActiveJobs returns the jobs from the debug data
-func (d *RunnerRepositoryImpl) GetActiveJobs(_ context.Context, _, _, _ string) ([]*entity.Job, error) {
+func (d *RunnerRepositoryImpl) FetchActiveJobs(_ context.Context, _, _, _ string) ([]*entity.Job, error) {
 	return d.data.Jobs, nil
 }
 

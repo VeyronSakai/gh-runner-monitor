@@ -54,10 +54,10 @@ func TestDebugRunnerRepository(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Test GetRunners
-	runners, err := repo.GetRunners(ctx, "", "", "")
+	// Test FetchRunners
+	runners, err := repo.FetchRunners(ctx, "", "", "")
 	if err != nil {
-		t.Fatalf("GetRunners failed: %v", err)
+		t.Fatalf("FetchRunners failed: %v", err)
 	}
 
 	if len(runners) != 1 {
@@ -72,10 +72,10 @@ func TestDebugRunnerRepository(t *testing.T) {
 		t.Errorf("Expected runner status Active, got %s", runners[0].Status)
 	}
 
-	// Test GetActiveJobs
-	jobs, err := repo.GetActiveJobs(ctx, "", "", "")
+	// Test FetchActiveJobs
+	jobs, err := repo.FetchActiveJobs(ctx, "", "", "")
 	if err != nil {
-		t.Fatalf("GetActiveJobs failed: %v", err)
+		t.Fatalf("FetchActiveJobs failed: %v", err)
 	}
 
 	if len(jobs) != 1 {

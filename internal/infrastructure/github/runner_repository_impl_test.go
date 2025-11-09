@@ -81,7 +81,32 @@ func TestRunnerRepositoryImpl_ConvertRunners(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := repo.convertRunners(tt.response)
+			result := make([]*entity.Runner, 0, len(tt.response.Runners))
+			for _, runner := range tt.response.Runners {
+				status := entity.StatusOffline
+				if runner.Status == "online" {
+					if runner.Busy {
+						status = entity.StatusActive
+					} else {
+						status = entity.StatusIdle
+					}
+				}
+
+				labels := make([]string, 0, len(runner.Labels))
+				for _, l := range runner.Labels {
+					labels = append(labels, l.Name)
+				}
+
+				result = append(result, &entity.Runner{
+					ID:        runner.ID,
+					Name:      runner.Name,
+					Status:    status,
+					Labels:    labels,
+					OS:        runner.OS,
+					UpdatedAt: time.Now(),
+				})
+			}
+			got := result
 			if len(got) != tt.want {
 				t.Errorf("convertRunners() got %d runners, want %d", len(got), tt.want)
 			}

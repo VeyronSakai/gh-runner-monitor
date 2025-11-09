@@ -30,79 +30,14 @@ func NewRunnerRepository() (domainrepo.RunnerRepository, error) {
 	}, nil
 }
 
-// GetRunners retrieves all runners for a repository or organization
-func (r *RunnerRepositoryImpl) GetRunners(ctx context.Context, owner, repo, org string) ([]*entity.Runner, error) {
-	path := r.buildRunnersPath(owner, repo, org)
-	runners, err := r.fetchRunners(path)
+// FetchRunners retrieves all runners for a repository or organization
+func (r *RunnerRepositoryImpl) FetchRunners(ctx context.Context, owner, repo, org string) ([]*entity.Runner, error) {
+	path := r.getRunnersPath(owner, repo, org)
+	runners, err := r.requestGetRunners(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.convertRunners(runners), nil
-}
-
-// GetActiveJobs retrieves all active jobs for a repository or organization
-func (r *RunnerRepositoryImpl) GetActiveJobs(ctx context.Context, owner, repo, org string) ([]*entity.Job, error) {
-	path := r.buildWorkflowRunsPath(owner, repo, org)
-	runs, err := r.fetchWorkflowRuns(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var allJobs []*entity.Job
-	for _, run := range runs.WorkflowRuns {
-		jobs, err := r.getJobsForRun(run, org, owner, repo)
-		if err != nil {
-			continue // Skip this run if we can't get jobs
-		}
-		allJobs = append(allJobs, jobs...)
-	}
-
-	return allJobs, nil
-}
-
-// GetCurrentTime returns the current time
-// This implements the TimeProvider interface for production use
-func (r *RunnerRepositoryImpl) GetCurrentTime() time.Time {
-	return time.Now()
-}
-
-// buildRunnersPath constructs the API path for fetching runners
-func (r *RunnerRepositoryImpl) buildRunnersPath(owner, repo, org string) string {
-	if org != "" {
-		return fmt.Sprintf("orgs/%s/actions/runners", org)
-	}
-	return fmt.Sprintf("repos/%s/%s/actions/runners", owner, repo)
-}
-
-// buildWorkflowRunsPath constructs the API path for fetching workflow runs
-func (r *RunnerRepositoryImpl) buildWorkflowRunsPath(owner, repo, org string) string {
-	if org != "" {
-		return fmt.Sprintf("orgs/%s/actions/runs?status=in_progress", org)
-	}
-	return fmt.Sprintf("repos/%s/%s/actions/runs?status=in_progress", owner, repo)
-}
-
-// fetchRunners fetches runners from GitHub API
-func (r *RunnerRepositoryImpl) fetchRunners(path string) (*runnersResponse, error) {
-	response, err := r.restClient.Request(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to request runners: %w", err)
-	}
-	defer func() {
-		_ = response.Body.Close()
-	}()
-
-	var runners runnersResponse
-	if err := json.NewDecoder(response.Body).Decode(&runners); err != nil {
-		return nil, fmt.Errorf("failed to decode runners response: %w", err)
-	}
-
-	return &runners, nil
-}
-
-// convertRunners converts GitHub API response to domain entities
-func (r *RunnerRepositoryImpl) convertRunners(runners *runnersResponse) []*entity.Runner {
 	result := make([]*entity.Runner, 0, len(runners.Runners))
 	for _, runner := range runners.Runners {
 		status := entity.StatusOffline
@@ -128,30 +63,133 @@ func (r *RunnerRepositoryImpl) convertRunners(runners *runnersResponse) []*entit
 			UpdatedAt: time.Now(),
 		})
 	}
-
-	return result
+	return result, nil
 }
 
-// fetchWorkflowRuns fetches workflow runs from GitHub API
-func (r *RunnerRepositoryImpl) fetchWorkflowRuns(path string) (*workflowRunsResponse, error) {
+// FetchActiveJobs Retrieves all active jobs for a repository or organization
+func (r *RunnerRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, org string) ([]*entity.Job, error) {
+	var allJobs []*entity.Job
+
+	// Fetch in_progress workflow runs
+	inProgressPath := r.getWorkflowRunsPath(owner, repo, org, "in_progress")
+	inProgressRuns, err := r.fetchWorkflowRuns(inProgressPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch in_progress runs: %w", err)
+	}
+
+	for _, run := range inProgressRuns.WorkflowRuns {
+		jobs, err := r.getJobsForRun(run, org, owner, repo)
+		if err != nil {
+			continue // Skip this run if we can't get jobs
+		}
+		allJobs = append(allJobs, jobs...)
+	}
+
+	// Fetch queued workflow runs
+	queuedPath := r.getWorkflowRunsPath(owner, repo, org, "queued")
+	queuedRuns, err := r.fetchWorkflowRuns(queuedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch queued runs: %w", err)
+	}
+
+	for _, run := range queuedRuns.WorkflowRuns {
+		jobs, err := r.getJobsForRun(run, org, owner, repo)
+		if err != nil {
+			continue // Skip this run if we can't get jobs
+		}
+		allJobs = append(allJobs, jobs...)
+	}
+
+	return allJobs, nil
+}
+
+// GetCurrentTime returns the current time
+// This implements the TimeProvider interface for production use
+func (r *RunnerRepositoryImpl) GetCurrentTime() time.Time {
+	return time.Now()
+}
+
+// getRunnersPath constructs the API path for fetching runners
+func (r *RunnerRepositoryImpl) getRunnersPath(owner, repo, org string) string {
+	if org != "" {
+		return fmt.Sprintf("orgs/%s/actions/runners", org)
+	}
+	return fmt.Sprintf("repos/%s/%s/actions/runners", owner, repo)
+}
+
+// getWorkflowRunsPath constructs the API path for fetching workflow runs with a specific status
+func (r *RunnerRepositoryImpl) getWorkflowRunsPath(owner, repo, org, status string) string {
+	if org != "" {
+		return fmt.Sprintf("orgs/%s/actions/runs?status=%s", org, status)
+	}
+	return fmt.Sprintf("repos/%s/%s/actions/runs?status=%s", owner, repo, status)
+}
+
+// requestGetRunners fetches runners from GitHub API
+func (r *RunnerRepositoryImpl) requestGetRunners(path string) (*runnersResponse, error) {
 	response, err := r.restClient.Request(http.MethodGet, path, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to request workflow runs: %w", err)
+		return nil, fmt.Errorf("failed to request runners: %w", err)
 	}
 	defer func() {
 		_ = response.Body.Close()
 	}()
 
-	var runs workflowRunsResponse
-	if err := json.NewDecoder(response.Body).Decode(&runs); err != nil {
-		return nil, fmt.Errorf("failed to decode workflow runs response: %w", err)
+	var runners runnersResponse
+	if err := json.NewDecoder(response.Body).Decode(&runners); err != nil {
+		return nil, fmt.Errorf("failed to decode runners response: %w", err)
 	}
 
-	return &runs, nil
+	return &runners, nil
 }
 
-// fetchJobs fetches jobs from GitHub API
-func (r *RunnerRepositoryImpl) fetchJobs(path string) (*jobsResponse, error) {
+// fetchWorkflowRuns fetches workflow runs from GitHub API with pagination support
+func (r *RunnerRepositoryImpl) fetchWorkflowRuns(path string) (*workflowRunsResponse, error) {
+	allRuns := &workflowRunsResponse{
+		WorkflowRuns: []workflowRun{},
+	}
+
+	// Determine the separator for query parameters
+	// Use "?" if the path doesn't have any query parameters yet
+	// Use "&" if the path already has query parameters (e.g., "?status=in_progress")
+	separator := "?"
+	if strings.Contains(path, "?") {
+		separator = "&"
+	}
+
+	page := 1
+	perPage := 100
+
+	for {
+		currentPath := fmt.Sprintf("%s%sper_page=%d&page=%d", path, separator, perPage, page)
+		response, err := r.restClient.Request(http.MethodGet, currentPath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to request workflow runs: %w", err)
+		}
+
+		var runs workflowRunsResponse
+		if err := json.NewDecoder(response.Body).Decode(&runs); err != nil {
+			_ = response.Body.Close()
+			return nil, fmt.Errorf("failed to decode workflow runs response: %w", err)
+		}
+		_ = response.Body.Close()
+
+		allRuns.TotalCount = runs.TotalCount
+		allRuns.WorkflowRuns = append(allRuns.WorkflowRuns, runs.WorkflowRuns...)
+
+		// If we got fewer items than per_page, we've reached the last page
+		if len(runs.WorkflowRuns) < perPage {
+			break
+		}
+
+		page++
+	}
+
+	return allRuns, nil
+}
+
+// requestGetJobs fetches jobs from GitHub API
+func (r *RunnerRepositoryImpl) requestGetJobs(path string) (*jobsResponse, error) {
 	response, err := r.restClient.Request(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request jobs: %w", err)
@@ -176,7 +214,7 @@ func (r *RunnerRepositoryImpl) getJobsForRun(run workflowRun, org, owner, repo s
 	}
 
 	path := fmt.Sprintf("repos/%s/%s/actions/runs/%d/jobs", runOwner, runRepo, run.ID)
-	jobs, err := r.fetchJobs(path)
+	jobs, err := r.requestGetJobs(path)
 	if err != nil {
 		return nil, err
 	}

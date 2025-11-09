@@ -23,13 +23,13 @@ func NewRunnerMonitor(runnerRepo repository.RunnerRepository) *RunnerMonitor {
 // Execute retrieves runners and jobs, and updates runner status
 func (u *RunnerMonitor) Execute(ctx context.Context, owner, repo, org string) (*value_object.MonitorData, error) {
 	// Fetch runners
-	runners, err := u.runnerRepo.GetRunners(ctx, owner, repo, org)
+	runners, err := u.runnerRepo.FetchRunners(ctx, owner, repo, org)
 	if err != nil {
 		return nil, err
 	}
 
 	// Fetch active jobs
-	jobs, err := u.runnerRepo.GetActiveJobs(ctx, owner, repo, org)
+	jobs, err := u.runnerRepo.FetchActiveJobs(ctx, owner, repo, org)
 	if err != nil {
 		return nil, err
 	}

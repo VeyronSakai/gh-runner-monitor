@@ -92,12 +92,12 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 			},
 		},
 		{
-			name:          "GetRunners returns error",
+			name:          "FetchRunners returns error",
 			getRunnersErr: errors.New("failed to get runners"),
 			wantErr:       true,
 		},
 		{
-			name: "GetActiveJobs returns error",
+			name: "FetchActiveJobs returns error",
 			runners: []*entity.Runner{
 				{
 					ID:     runnerID,
