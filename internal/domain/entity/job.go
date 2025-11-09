@@ -16,19 +16,9 @@ type Job struct {
 	HtmlUrl      string
 }
 
-// IsRunning returns true if the job is currently running
-func (j *Job) IsRunning() bool {
-	return j.Status == "in_progress"
-}
-
-// IsQueued returns true if the job is queued
-func (j *Job) IsQueued() bool {
-	return j.Status == "queued"
-}
-
-// IsAssignedToRunner returns true if the job is assigned to a specific runner
+// IsAssignedToRunner returns true if the job is running and assigned to a specific runner
 func (j *Job) IsAssignedToRunner(runnerID int64) bool {
-	return j.RunnerID != nil && *j.RunnerID == runnerID
+	return j.Status == "in_progress" && j.RunnerID != nil && *j.RunnerID == runnerID
 }
 
 // GetExecutionDuration returns the duration since the job started

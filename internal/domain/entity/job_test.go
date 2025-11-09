@@ -60,45 +60,30 @@ func TestJob(t *testing.T) {
 }
 
 func TestJobMethods(t *testing.T) {
-	t.Run("IsRunning", func(t *testing.T) {
-		job := &Job{Status: "in_progress"}
-		if !job.IsRunning() {
-			t.Error("expected IsRunning() to be true for in_progress status")
-		}
-
-		job.Status = "queued"
-		if job.IsRunning() {
-			t.Error("expected IsRunning() to be false for queued status")
-		}
-	})
-
-	t.Run("IsQueued", func(t *testing.T) {
-		job := &Job{Status: "queued"}
-		if !job.IsQueued() {
-			t.Error("expected IsQueued() to be true for queued status")
-		}
-
-		job.Status = "in_progress"
-		if job.IsQueued() {
-			t.Error("expected IsQueued() to be false for in_progress status")
-		}
-	})
-
 	t.Run("IsAssignedToRunner", func(t *testing.T) {
 		runnerID := int64(123)
-		job := &Job{RunnerID: &runnerID}
+		job := &Job{
+			RunnerID: &runnerID,
+			Status:   "in_progress",
+		}
 
 		if !job.IsAssignedToRunner(123) {
-			t.Error("expected IsAssignedToRunner(123) to be true")
+			t.Error("expected IsAssignedToRunner(123) to be true for running job")
 		}
 
 		if job.IsAssignedToRunner(456) {
-			t.Error("expected IsAssignedToRunner(456) to be false")
+			t.Error("expected IsAssignedToRunner(456) to be false for different runner")
 		}
 
 		job.RunnerID = nil
 		if job.IsAssignedToRunner(123) {
 			t.Error("expected IsAssignedToRunner(123) to be false when RunnerID is nil")
+		}
+
+		job.RunnerID = &runnerID
+		job.Status = "queued"
+		if job.IsAssignedToRunner(123) {
+			t.Error("expected IsAssignedToRunner(123) to be false for queued job")
 		}
 	})
 
