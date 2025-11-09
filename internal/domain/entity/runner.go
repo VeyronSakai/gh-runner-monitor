@@ -26,11 +26,6 @@ func (r *Runner) IsOnline() bool {
 	return r.Status == StatusIdle || r.Status == StatusActive
 }
 
-// IsIdle returns true if the runner is idle
-func (r *Runner) IsIdle() bool {
-	return r.Status == StatusIdle
-}
-
 // IsActive returns true if the runner is active
 func (r *Runner) IsActive() bool {
 	return r.Status == StatusActive
