@@ -107,10 +107,6 @@ func TestRunnerMethods(t *testing.T) {
 				t.Errorf("IsOnline() = %v, want %v", runner.IsOnline(), tt.isOnline)
 			}
 
-			if runner.IsIdle() != tt.isIdle {
-				t.Errorf("IsIdle() = %v, want %v", runner.IsIdle(), tt.isIdle)
-			}
-
 			if runner.IsActive() != tt.isActive {
 				t.Errorf("IsActive() = %v, want %v", runner.IsActive(), tt.isActive)
 			}

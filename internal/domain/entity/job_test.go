@@ -72,18 +72,6 @@ func TestJobMethods(t *testing.T) {
 		}
 	})
 
-	t.Run("IsQueued", func(t *testing.T) {
-		job := &Job{Status: "queued"}
-		if !job.IsQueued() {
-			t.Error("expected IsQueued() to be true for queued status")
-		}
-
-		job.Status = "in_progress"
-		if job.IsQueued() {
-			t.Error("expected IsQueued() to be false for in_progress status")
-		}
-	})
-
 	t.Run("IsAssignedToRunner", func(t *testing.T) {
 		runnerID := int64(123)
 		job := &Job{RunnerID: &runnerID}
@@ -99,22 +87,6 @@ func TestJobMethods(t *testing.T) {
 		job.RunnerID = nil
 		if job.IsAssignedToRunner(123) {
 			t.Error("expected IsAssignedToRunner(123) to be false when RunnerID is nil")
-		}
-	})
-
-	t.Run("GetExecutionDuration", func(t *testing.T) {
-		startedAt := time.Now().Add(-5 * time.Minute)
-		job := &Job{StartedAt: &startedAt}
-
-		duration := job.GetExecutionDuration()
-		if duration < 4*time.Minute || duration > 6*time.Minute {
-			t.Errorf("expected duration around 5 minutes, got %v", duration)
-		}
-
-		job.StartedAt = nil
-		duration = job.GetExecutionDuration()
-		if duration != 0 {
-			t.Errorf("expected duration to be 0 when StartedAt is nil, got %v", duration)
 		}
 	})
 }

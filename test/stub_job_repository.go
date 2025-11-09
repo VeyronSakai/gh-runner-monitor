@@ -14,13 +14,6 @@ type StubJobRepository struct {
 	GetActiveJobsError error
 }
 
-// NewStubJobRepositoryWithError creates a new StubJobRepository that returns errors.
-func NewStubJobRepositoryWithError(getActiveJobsErr error) *StubJobRepository {
-	return &StubJobRepository{
-		GetActiveJobsError: getActiveJobsErr,
-	}
-}
-
 func (s *StubJobRepository) FetchActiveJobs(_ context.Context, _, _, _ string) ([]*entity.Job, error) {
 	if s.GetActiveJobsError != nil {
 		return nil, s.GetActiveJobsError

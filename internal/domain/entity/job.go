@@ -21,22 +21,9 @@ func (j *Job) IsRunning() bool {
 	return j.Status == "in_progress"
 }
 
-// IsQueued returns true if the job is queued
-func (j *Job) IsQueued() bool {
-	return j.Status == "queued"
-}
-
 // IsAssignedToRunner returns true if the job is assigned to a specific runner
 func (j *Job) IsAssignedToRunner(runnerID int64) bool {
 	return j.RunnerID != nil && *j.RunnerID == runnerID
-}
-
-// GetExecutionDuration returns the duration since the job started
-func (j *Job) GetExecutionDuration() time.Duration {
-	if j.StartedAt == nil {
-		return 0
-	}
-	return time.Since(*j.StartedAt)
 }
 
 // GetExecutionDurationAt returns the duration from the start time to the specified time
