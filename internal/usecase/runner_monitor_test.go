@@ -11,15 +11,23 @@ import (
 )
 
 func TestNewRunnerMonitor(t *testing.T) {
-	repo := &test.StubRunnerRepository{}
-	useCase := NewRunnerMonitor(repo)
+	runnerRepo := &test.StubRunnerRepository{}
+	jobRepo := &test.StubJobRepository{}
+	timeProvider := &test.StubTimeProvider{}
+	useCase := NewRunnerMonitor(runnerRepo, jobRepo, timeProvider)
 
 	if useCase == nil {
 		t.Fatal("NewRunnerMonitor() returned nil")
 	}
 
-	if useCase.runnerRepo != repo {
+	if useCase.runnerRepo != runnerRepo {
 		t.Error("NewRunnerMonitor() did not set runnerRepo correctly")
+	}
+	if useCase.jobRepo != jobRepo {
+		t.Error("NewRunnerMonitor() did not set jobRepo correctly")
+	}
+	if useCase.timeProvider != timeProvider {
+		t.Error("NewRunnerMonitor() did not set timeProvider correctly")
 	}
 }
 
@@ -112,14 +120,17 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &test.StubRunnerRepository{
-				Runners:            tt.runners,
+			runnerRepo := &test.StubRunnerRepository{
+				Runners:         tt.runners,
+				GetRunnersError: tt.getRunnersErr,
+			}
+			jobRepo := &test.StubJobRepository{
 				Jobs:               tt.jobs,
-				GetRunnersError:    tt.getRunnersErr,
 				GetActiveJobsError: tt.getJobsErr,
 			}
+			timeProvider := &test.StubTimeProvider{}
 
-			useCase := NewRunnerMonitor(repo)
+			useCase := NewRunnerMonitor(runnerRepo, jobRepo, timeProvider)
 			ctx := context.Background()
 
 			data, err := useCase.Execute(ctx, "owner", "repo", "")
@@ -151,7 +162,7 @@ func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
 	runnerName := "test-runner"
 	startedAt := time.Now()
 
-	repo := &test.StubRunnerRepository{
+	runnerRepo := &test.StubRunnerRepository{
 		Runners: []*entity.Runner{
 			{
 				ID:     runnerID,
@@ -161,6 +172,8 @@ func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
 				OS:     "linux",
 			},
 		},
+	}
+	jobRepo := &test.StubJobRepository{
 		Jobs: []*entity.Job{
 			{
 				ID:         1,
@@ -173,8 +186,9 @@ func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
 			},
 		},
 	}
+	timeProvider := &test.StubTimeProvider{}
 
-	useCase := NewRunnerMonitor(repo)
+	useCase := NewRunnerMonitor(runnerRepo, jobRepo, timeProvider)
 	ctx := context.Background()
 
 	data, err := useCase.Execute(ctx, "owner", "repo", "")
