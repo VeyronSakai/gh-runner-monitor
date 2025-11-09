@@ -15,13 +15,6 @@ type StubRunnerRepository struct {
 	GetRunnersError error
 }
 
-// NewStubRunnerRepositoryWithError creates a new StubRunnerRepository that returns errors.
-func NewStubRunnerRepositoryWithError(getRunnersErr error) *StubRunnerRepository {
-	return &StubRunnerRepository{
-		GetRunnersError: getRunnersErr,
-	}
-}
-
 func (s *StubRunnerRepository) FetchRunners(_ context.Context, _, _, _ string) ([]*entity.Runner, error) {
 	if s.GetRunnersError != nil {
 		return nil, s.GetRunnersError
