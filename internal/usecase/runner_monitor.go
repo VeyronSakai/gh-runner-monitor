@@ -10,26 +10,34 @@ import (
 
 // RunnerMonitor handles the business logic for monitoring runners
 type RunnerMonitor struct {
-	runnerRepo repository.RunnerRepository
+	runnerRepo   repository.RunnerRepository
+	jobRepo      repository.JobRepository
+	timeProvider repository.TimeProvider
 }
 
 // NewRunnerMonitor creates a new RunnerMonitor
-func NewRunnerMonitor(runnerRepo repository.RunnerRepository) *RunnerMonitor {
+func NewRunnerMonitor(
+	runnerRepo repository.RunnerRepository,
+	jobRepo repository.JobRepository,
+	timeProvider repository.TimeProvider,
+) *RunnerMonitor {
 	return &RunnerMonitor{
-		runnerRepo: runnerRepo,
+		runnerRepo:   runnerRepo,
+		jobRepo:      jobRepo,
+		timeProvider: timeProvider,
 	}
 }
 
 // Execute retrieves runners and jobs, and updates runner status
 func (u *RunnerMonitor) Execute(ctx context.Context, owner, repo, org string) (*value_object.MonitorData, error) {
 	// Fetch runners
-	runners, err := u.runnerRepo.GetRunners(ctx, owner, repo, org)
+	runners, err := u.runnerRepo.FetchRunners(ctx, owner, repo, org)
 	if err != nil {
 		return nil, err
 	}
 
 	// Fetch active jobs
-	jobs, err := u.runnerRepo.GetActiveJobs(ctx, owner, repo, org)
+	jobs, err := u.jobRepo.FetchActiveJobs(ctx, owner, repo, org)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +46,7 @@ func (u *RunnerMonitor) Execute(ctx context.Context, owner, repo, org string) (*
 	service.UpdateRunnerStatus(runners, jobs)
 
 	return &value_object.MonitorData{
-		CurrentTime: u.runnerRepo.GetCurrentTime(),
+		CurrentTime: u.timeProvider.GetCurrentTime(),
 		Runners:     runners,
 		Jobs:        jobs,
 	}, nil

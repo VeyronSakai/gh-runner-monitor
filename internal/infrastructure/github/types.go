@@ -29,16 +29,16 @@ type workflowRunsResponse struct {
 }
 
 type workflowRun struct {
-	ID         int64      `json:"id"`
-	Name       string     `json:"name"`
-	Status     string     `json:"status"`
-	Conclusion *string    `json:"conclusion"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	Repository repository `json:"repository"`
+	ID         int64              `json:"id"`
+	Name       string             `json:"name"`
+	Status     string             `json:"status"`
+	Conclusion *string            `json:"conclusion"`
+	CreatedAt  time.Time          `json:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at"`
+	Repository repositoryMetadata `json:"repository"`
 }
 
-type repository struct {
+type repositoryMetadata struct {
 	Name     string `json:"name"`
 	FullName string `json:"full_name"`
 }

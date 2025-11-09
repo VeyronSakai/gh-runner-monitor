@@ -48,21 +48,31 @@ func init() {
 
 func runMonitor(_ *cobra.Command, _ []string) error {
 	var runnerRepo repository.RunnerRepository
+	var jobRepo repository.JobRepository
+	var timeProvider repository.TimeProvider
 	var err error
 
 	// Check if debug mode is enabled
 	if debugPath != "" {
-		// Use debug repository with JSON data
-		runnerRepo, err = debug.NewRunnerRepository(debugPath)
+		// Use debug repositories with JSON data
+		data, err := debug.LoadDebugData(debugPath)
 		if err != nil {
-			return fmt.Errorf("failed to create debug repository: %w", err)
+			return fmt.Errorf("failed to load debug data: %w", err)
 		}
+		runnerRepo = debug.NewRunnerRepository(data)
+		jobRepo = debug.NewJobRepository(data)
+		timeProvider = debug.NewTimeProvider(data)
 	} else {
 		// Create infrastructure layer (GitHub client)
 		runnerRepo, err = github.NewRunnerRepository()
 		if err != nil {
 			return fmt.Errorf("failed to create GitHub client: %w", err)
 		}
+		jobRepo, err = github.NewJobRepository()
+		if err != nil {
+			return fmt.Errorf("failed to create GitHub job client: %w", err)
+		}
+		timeProvider = github.NewTimeProvider()
 	}
 
 	var owner, repoName, orgName string
@@ -92,7 +102,7 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 	}
 
 	// Create use case with dependencies
-	monitorUseCase := usecase.NewRunnerMonitor(runnerRepo)
+	monitorUseCase := usecase.NewRunnerMonitor(runnerRepo, jobRepo, timeProvider)
 
 	// Create presentation layer (TUI) with use case
 	model := presentation.NewModel(monitorUseCase, owner, repoName, orgName, interval)
