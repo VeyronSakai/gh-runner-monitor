@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
@@ -53,4 +54,12 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 	}
 	return fmt.Sprintf("%02d:%02d", minutes, seconds)
+}
+
+// formatLabels formats the labels slice into a comma-separated string
+func formatLabels(labels []string) string {
+	if len(labels) == 0 {
+		return "-"
+	}
+	return strings.Join(labels, ", ")
 }
