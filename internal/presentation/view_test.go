@@ -83,6 +83,44 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
+func TestFormatLabels(t *testing.T) {
+	tests := []struct {
+		name     string
+		labels   []string
+		expected string
+	}{
+		{
+			name:     "no labels",
+			labels:   []string{},
+			expected: "-",
+		},
+		{
+			name:     "single label",
+			labels:   []string{"self-hosted"},
+			expected: "self-hosted",
+		},
+		{
+			name:     "multiple labels",
+			labels:   []string{"self-hosted", "linux", "x64"},
+			expected: "self-hosted, linux, x64",
+		},
+		{
+			name:     "nil labels",
+			labels:   nil,
+			expected: "-",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatLabels(tt.labels)
+			if result != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
 func TestView(t *testing.T) {
 	t.Run("view with error", func(t *testing.T) {
 		model := &Model{

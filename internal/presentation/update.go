@@ -68,6 +68,8 @@ func (m *Model) updateTableRows() {
 		statusIcon := getStatusIcon(runner.Status)
 		status := fmt.Sprintf("%s %s", statusIcon, runner.Status)
 
+		labels := formatLabels(runner.Labels)
+
 		jobName := "-"
 		execTime := "-"
 
@@ -83,6 +85,7 @@ func (m *Model) updateTableRows() {
 		rows = append(rows, table.Row{
 			runner.Name,
 			status,
+			labels,
 			jobName,
 			execTime,
 		})

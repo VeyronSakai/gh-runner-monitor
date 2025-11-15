@@ -14,6 +14,7 @@ import (
 const (
 	columnTitleRunnerName    = "Runner Name"
 	columnTitleStatus        = "Status"
+	columnTitleLabels        = "Labels"
 	columnTitleJobName       = "Job Name"
 	columnTitleExecutionTime = "Execution Time"
 )
@@ -23,6 +24,7 @@ const (
 	// Minimum widths for each column
 	minWidthRunnerName = 15
 	minWidthStatus     = 12
+	minWidthLabels     = 20
 	minWidthJobName    = 20
 	minWidthExecTime   = 15
 
@@ -33,10 +35,11 @@ const (
 	headerFooterHeight = 5
 
 	// Proportions for distributing extra width
-	ratioRunnerName = 0.25
-	ratioStatus     = 0.15
-	ratioJobName    = 0.45
-	ratioExecTime   = 0.15
+	ratioRunnerName = 0.20
+	ratioStatus     = 0.12
+	ratioLabels     = 0.20
+	ratioJobName    = 0.35
+	ratioExecTime   = 0.13
 
 	// Default terminal size (fallback if WindowSizeMsg is not received)
 	defaultTerminalWidth  = 80
@@ -67,6 +70,7 @@ func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string, intervalS
 	columns := []table.Column{
 		{Title: columnTitleRunnerName, Width: minWidthRunnerName},
 		{Title: columnTitleStatus, Width: minWidthStatus},
+		{Title: columnTitleLabels, Width: minWidthLabels},
 		{Title: columnTitleJobName, Width: minWidthJobName},
 		{Title: columnTitleExecutionTime, Width: minWidthExecTime},
 	}
@@ -107,13 +111,14 @@ func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string, intervalS
 // getCalculatedColumnWidths calculates column widths based on available terminal width
 func getCalculatedColumnWidths(terminalWidth int) []table.Column {
 	availableWidth := terminalWidth - borderPadding
-	totalMinWidth := minWidthRunnerName + minWidthStatus + minWidthJobName + minWidthExecTime
+	totalMinWidth := minWidthRunnerName + minWidthStatus + minWidthLabels + minWidthJobName + minWidthExecTime
 
 	if availableWidth < totalMinWidth {
 		// Terminal is too small, use minimum widths
 		return []table.Column{
 			{Title: columnTitleRunnerName, Width: minWidthRunnerName},
 			{Title: columnTitleStatus, Width: minWidthStatus},
+			{Title: columnTitleLabels, Width: minWidthLabels},
 			{Title: columnTitleJobName, Width: minWidthJobName},
 			{Title: columnTitleExecutionTime, Width: minWidthExecTime},
 		}
@@ -124,12 +129,14 @@ func getCalculatedColumnWidths(terminalWidth int) []table.Column {
 	// Distribute remaining width proportionally
 	runnerNameExtra := int(float64(remainingWidth) * ratioRunnerName)
 	statusExtra := int(float64(remainingWidth) * ratioStatus)
+	labelsExtra := int(float64(remainingWidth) * ratioLabels)
 	jobNameExtra := int(float64(remainingWidth) * ratioJobName)
-	execTimeExtra := remainingWidth - runnerNameExtra - statusExtra - jobNameExtra
+	execTimeExtra := remainingWidth - runnerNameExtra - statusExtra - labelsExtra - jobNameExtra
 
 	return []table.Column{
 		{Title: columnTitleRunnerName, Width: minWidthRunnerName + runnerNameExtra},
 		{Title: columnTitleStatus, Width: minWidthStatus + statusExtra},
+		{Title: columnTitleLabels, Width: minWidthLabels + labelsExtra},
 		{Title: columnTitleJobName, Width: minWidthJobName + jobNameExtra},
 		{Title: columnTitleExecutionTime, Width: minWidthExecTime + execTimeExtra},
 	}

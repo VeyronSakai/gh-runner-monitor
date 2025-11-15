@@ -54,3 +54,18 @@ func formatDuration(d time.Duration) string {
 	}
 	return fmt.Sprintf("%02d:%02d", minutes, seconds)
 }
+
+// formatLabels formats the labels slice into a comma-separated string
+func formatLabels(labels []string) string {
+	if len(labels) == 0 {
+		return "-"
+	}
+	result := ""
+	for i, label := range labels {
+		if i > 0 {
+			result += ", "
+		}
+		result += label
+	}
+	return result
+}
