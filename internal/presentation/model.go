@@ -23,6 +23,7 @@ const (
 const (
 	// Minimum widths for each column
 	minRunnerNameWidth = 10
+	minLabelsWidth     = 10
 	minJobNameWidth    = 10
 
 	statusWidth   = 10
