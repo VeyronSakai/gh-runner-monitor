@@ -36,8 +36,8 @@ const (
 	headerFooterHeight = 5
 
 	// Proportions for distributing extra width
-	ratioRunnerName = 0.20
-	ratioLabels     = 0.25
+	ratioRunnerName = 0.10
+	ratioLabels     = 0.35
 	ratioJobName    = 0.55
 
 	// Default terminal size (fallback if WindowSizeMsg is not received)
