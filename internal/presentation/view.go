@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
@@ -60,12 +61,5 @@ func formatLabels(labels []string) string {
 	if len(labels) == 0 {
 		return "-"
 	}
-	result := ""
-	for i, label := range labels {
-		if i > 0 {
-			result += ", "
-		}
-		result += label
-	}
-	return result
+	return strings.Join(labels, ", ")
 }
