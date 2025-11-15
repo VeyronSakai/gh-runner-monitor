@@ -12,21 +12,21 @@ import (
 
 // Column title constants
 const (
-	columnTitleRunnerName    = "Runner Name"
+	columnTitleRunnerName    = "Runner"
 	columnTitleStatus        = "Status"
 	columnTitleLabels        = "Labels"
 	columnTitleJobName       = "Job Name"
-	columnTitleExecutionTime = "Execution Time"
+	columnTitleExecutionTime = "Time"
 )
 
 // Column width constants
 const (
 	// Minimum widths for each column
-	minWidthRunnerName = 15
-	minWidthStatus     = 12
-	minWidthLabels     = 20
-	minWidthJobName    = 20
-	minWidthExecTime   = 15
+	minRunnerNameWidth = 10
+	minJobNameWidth    = 10
+
+	statusWidth   = 10
+	execTimeWidth = 10
 
 	// Space reserved for borders and padding
 	borderPadding = 10
@@ -36,10 +36,8 @@ const (
 
 	// Proportions for distributing extra width
 	ratioRunnerName = 0.20
-	ratioStatus     = 0.12
-	ratioLabels     = 0.20
-	ratioJobName    = 0.35
-	ratioExecTime   = 0.13
+	ratioLabels     = 0.25
+	ratioJobName    = 0.55
 
 	// Default terminal size (fallback if WindowSizeMsg is not received)
 	defaultTerminalWidth  = 80
@@ -68,11 +66,11 @@ type Model struct {
 func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string, intervalSeconds int) *Model {
 	// Start with minimum column widths - will be updated when WindowSizeMsg is received
 	columns := []table.Column{
-		{Title: columnTitleRunnerName, Width: minWidthRunnerName},
-		{Title: columnTitleStatus, Width: minWidthStatus},
-		{Title: columnTitleLabels, Width: minWidthLabels},
-		{Title: columnTitleJobName, Width: minWidthJobName},
-		{Title: columnTitleExecutionTime, Width: minWidthExecTime},
+		{Title: columnTitleRunnerName, Width: minRunnerNameWidth},
+		{Title: columnTitleStatus, Width: statusWidth},
+		{Title: columnTitleLabels, Width: minLabelsWidth},
+		{Title: columnTitleJobName, Width: minJobNameWidth},
+		{Title: columnTitleExecutionTime, Width: execTimeWidth},
 	}
 
 	s := table.DefaultStyles()
@@ -111,16 +109,16 @@ func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string, intervalS
 // getCalculatedColumnWidths calculates column widths based on available terminal width
 func getCalculatedColumnWidths(terminalWidth int) []table.Column {
 	availableWidth := terminalWidth - borderPadding
-	totalMinWidth := minWidthRunnerName + minWidthStatus + minWidthLabels + minWidthJobName + minWidthExecTime
+	totalMinWidth := minRunnerNameWidth + statusWidth + minLabelsWidth + minJobNameWidth + execTimeWidth
 
 	if availableWidth < totalMinWidth {
 		// Terminal is too small, use minimum widths
 		return []table.Column{
-			{Title: columnTitleRunnerName, Width: minWidthRunnerName},
-			{Title: columnTitleStatus, Width: minWidthStatus},
-			{Title: columnTitleLabels, Width: minWidthLabels},
-			{Title: columnTitleJobName, Width: minWidthJobName},
-			{Title: columnTitleExecutionTime, Width: minWidthExecTime},
+			{Title: columnTitleRunnerName, Width: minRunnerNameWidth},
+			{Title: columnTitleStatus, Width: statusWidth},
+			{Title: columnTitleLabels, Width: minLabelsWidth},
+			{Title: columnTitleJobName, Width: minJobNameWidth},
+			{Title: columnTitleExecutionTime, Width: execTimeWidth},
 		}
 	}
 
@@ -128,17 +126,15 @@ func getCalculatedColumnWidths(terminalWidth int) []table.Column {
 
 	// Distribute remaining width proportionally
 	runnerNameExtra := int(float64(remainingWidth) * ratioRunnerName)
-	statusExtra := int(float64(remainingWidth) * ratioStatus)
 	labelsExtra := int(float64(remainingWidth) * ratioLabels)
 	jobNameExtra := int(float64(remainingWidth) * ratioJobName)
-	execTimeExtra := remainingWidth - runnerNameExtra - statusExtra - labelsExtra - jobNameExtra
 
 	return []table.Column{
-		{Title: columnTitleRunnerName, Width: minWidthRunnerName + runnerNameExtra},
-		{Title: columnTitleStatus, Width: minWidthStatus + statusExtra},
-		{Title: columnTitleLabels, Width: minWidthLabels + labelsExtra},
-		{Title: columnTitleJobName, Width: minWidthJobName + jobNameExtra},
-		{Title: columnTitleExecutionTime, Width: minWidthExecTime + execTimeExtra},
+		{Title: columnTitleRunnerName, Width: minRunnerNameWidth + runnerNameExtra},
+		{Title: columnTitleStatus, Width: statusWidth},
+		{Title: columnTitleLabels, Width: minLabelsWidth + labelsExtra},
+		{Title: columnTitleJobName, Width: minJobNameWidth + jobNameExtra},
+		{Title: columnTitleExecutionTime, Width: execTimeWidth},
 	}
 }
 
