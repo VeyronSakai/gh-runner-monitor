@@ -5,6 +5,7 @@ import (
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 	"github.com/VeyronSakai/gh-runner-monitor/internal/usecase"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -48,6 +49,7 @@ const (
 // Model represents the TUI application state
 type Model struct {
 	table          table.Model
+	spinner        spinner.Model
 	runnerMonitor  *usecase.RunnerMonitor
 	owner          string
 	repo           string
@@ -58,6 +60,7 @@ type Model struct {
 	lastUpdate     time.Time
 	updateInterval time.Duration
 	quitting       bool
+	loading        bool
 	width          int
 	height         int
 	err            error
@@ -95,13 +98,20 @@ func NewModel(useCase *usecase.RunnerMonitor, owner, repo, org string, intervalS
 		table.WithStyles(s),
 	)
 
+	// Initialize spinner
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	return &Model{
 		table:          t,
+		spinner:        sp,
 		runnerMonitor:  useCase,
 		owner:          owner,
 		repo:           repo,
 		org:            org,
 		updateInterval: time.Duration(intervalSeconds) * time.Second,
+		loading:        true,
 		width:          defaultTerminalWidth,
 		height:         defaultTerminalHeight,
 	}
@@ -151,6 +161,7 @@ func getCalculatedTableHeight(terminalHeight int) int {
 // Init initializes the model and returns the initial command
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
+		m.spinner.Tick,
 		m.fetchData(),
 		tea.Tick(m.updateInterval, func(t time.Time) tea.Msg {
 			return t

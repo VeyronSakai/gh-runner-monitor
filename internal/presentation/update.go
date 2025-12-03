@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/value_object"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -28,7 +29,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		case "r":
-			return m, m.fetchData()
+			m.loading = true
+			return m, tea.Batch(m.spinner.Tick, m.fetchData())
 		case "enter", "return":
 			return m, m.openJobLog()
 		}
@@ -42,15 +44,25 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		)
 
 	case value_object.DataMsg:
-		if msg.Err != nil {
-			m.err = msg.Err
-		} else {
+		if msg.Err == nil {
 			m.runners = msg.Data.Runners
 			m.jobs = msg.Data.Jobs
 			m.currentTime = msg.Data.CurrentTime
 			m.lastUpdate = time.Now()
 			m.err = nil
 			m.updateTableRows()
+		} else {
+			m.err = msg.Err
+		}
+
+		m.loading = false
+		return m, nil
+
+	case spinner.TickMsg:
+		if m.loading {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
 		}
 		return m, nil
 	}
@@ -135,7 +147,7 @@ func (m *Model) openJobLog() tea.Cmd {
 		if err := cmd.Start(); err != nil {
 			return value_object.DataMsg{Err: err}
 		}
-		
+
 		return nil
 	}
 }
