@@ -5,12 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+	"sync"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 	domainrepo "github.com/VeyronSakai/gh-runner-monitor/internal/domain/repository"
 	"github.com/cli/go-gh/v2/pkg/api"
 )
+
+// maxConcurrentRequests limits the number of parallel GitHub API requests
+const maxConcurrentRequests = 10
+
+// perPage is the page size used for paginated GitHub API requests
+const perPage = 100
 
 // JobRepositoryImpl implements the JobRepository interface using GitHub API
 type JobRepositoryImpl struct {
@@ -31,123 +37,163 @@ func NewJobRepository() (domainrepo.JobRepository, error) {
 
 // FetchActiveJobs retrieves all active jobs for a repository or organization
 func (j *JobRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, org string) ([]*entity.Job, error) {
+	targets := []repoRef{{owner: owner, name: repo}}
+	if org != "" {
+		// GitHub has no org-level endpoint for workflow runs, so each repository is queried individually.
+		repos, err := j.fetchOrgRepositories(ctx, org)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch repositories for organization %s: %w", org, err)
+		}
+		targets = make([]repoRef, 0, len(repos))
+		for _, r := range repos {
+			targets = append(targets, repoRef{owner: r.Owner.Login, name: r.Name})
+		}
+	}
+
+	runs, err := j.fetchActiveRuns(ctx, targets, org != "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch jobs for each run in parallel, keeping the original order
+	jobsPerRun := make([][]*entity.Job, len(runs))
+	forEachConcurrent(len(runs), func(i int) {
+		jobs, err := j.getJobsForRun(ctx, runs[i].repo, runs[i].run)
+		if err != nil {
+			return // Skip this run if we can't get jobs
+		}
+		jobsPerRun[i] = jobs
+	})
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	var allJobs []*entity.Job
-
-	// Fetch in_progress workflow runs
-	inProgressPath := j.getWorkflowRunsPath(owner, repo, org, "in_progress")
-	inProgressRuns, err := j.fetchWorkflowRuns(inProgressPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch in_progress runs: %w", err)
-	}
-
-	for _, run := range inProgressRuns.WorkflowRuns {
-		jobs, err := j.getJobsForRun(run, org, owner, repo)
-		if err != nil {
-			continue // Skip this run if we can't get jobs
-		}
+	for _, jobs := range jobsPerRun {
 		allJobs = append(allJobs, jobs...)
 	}
-
-	// Fetch queued workflow runs
-	queuedPath := j.getWorkflowRunsPath(owner, repo, org, "queued")
-	queuedRuns, err := j.fetchWorkflowRuns(queuedPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch queued runs: %w", err)
-	}
-
-	for _, run := range queuedRuns.WorkflowRuns {
-		jobs, err := j.getJobsForRun(run, org, owner, repo)
-		if err != nil {
-			continue // Skip this run if we can't get jobs
-		}
-		allJobs = append(allJobs, jobs...)
-	}
-
 	return allJobs, nil
 }
 
-// getWorkflowRunsPath constructs the API path for fetching workflow runs with a specific status
-func (j *JobRepositoryImpl) getWorkflowRunsPath(owner, repo, org, status string) string {
-	if org != "" {
-		return fmt.Sprintf("orgs/%s/actions/runs?status=%s", org, status)
-	}
-	return fmt.Sprintf("repos/%s/%s/actions/runs?status=%s", owner, repo, status)
+// repoRef identifies a repository
+type repoRef struct {
+	owner string
+	name  string
 }
 
-// fetchWorkflowRuns fetches workflow runs from GitHub API with pagination support
-func (j *JobRepositoryImpl) fetchWorkflowRuns(path string) (*workflowRunsResponse, error) {
-	allRuns := &workflowRunsResponse{
-		WorkflowRuns: []workflowRun{},
-	}
+// runRef is a workflow run together with the repository it belongs to
+type runRef struct {
+	repo repoRef
+	run  workflowRun
+}
 
-	// Determine the separator for query parameters
-	// Use "?" if the path doesn't have any query parameters yet
-	// Use "&" if the path already has query parameters (e.g., "?status=in_progress")
-	separator := "?"
-	if strings.Contains(path, "?") {
-		separator = "&"
-	}
+// activeRunStatuses are the workflow run statuses that can have active jobs
+var activeRunStatuses = []string{"in_progress", "queued"}
 
-	page := 1
-	perPage := 100
+// fetchActiveRuns fetches in_progress and queued runs for the given repositories in parallel.
+// When skipErrors is true, repositories that fail (e.g. Actions disabled or no permission) are ignored.
+func (j *JobRepositoryImpl) fetchActiveRuns(ctx context.Context, targets []repoRef, skipErrors bool) ([]runRef, error) {
+	n := len(targets) * len(activeRunStatuses)
+	runsPerReq := make([][]workflowRun, n)
+	errs := make([]error, n)
 
-	for {
-		currentPath := fmt.Sprintf("%s%sper_page=%d&page=%d", path, separator, perPage, page)
-		response, err := j.restClient.Request(http.MethodGet, currentPath, nil)
+	forEachConcurrent(n, func(i int) {
+		target := targets[i/len(activeRunStatuses)]
+		status := activeRunStatuses[i%len(activeRunStatuses)]
+		runs, err := j.fetchWorkflowRuns(ctx, target.owner, target.name, status)
 		if err != nil {
+			errs[i] = fmt.Errorf("failed to fetch %s runs for %s/%s: %w", status, target.owner, target.name, err)
+			return
+		}
+		runsPerReq[i] = runs
+	})
+
+	var result []runRef
+	for i, runs := range runsPerReq {
+		if errs[i] != nil {
+			if skipErrors {
+				continue
+			}
+			return nil, errs[i]
+		}
+		for _, run := range runs {
+			result = append(result, runRef{repo: targets[i/len(activeRunStatuses)], run: run})
+		}
+	}
+	return result, nil
+}
+
+// forEachConcurrent calls fn for each index in [0, n) with bounded concurrency and waits for all to finish
+func forEachConcurrent(n int, fn func(i int)) {
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxConcurrentRequests)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			fn(i)
+		}()
+	}
+	wg.Wait()
+}
+
+// fetchOrgRepositories lists all non-archived repositories in an organization
+func (j *JobRepositoryImpl) fetchOrgRepositories(ctx context.Context, org string) ([]repositoryResponse, error) {
+	var result []repositoryResponse
+
+	for page := 1; ; page++ {
+		path := fmt.Sprintf("orgs/%s/repos?type=all&per_page=%d&page=%d", org, perPage, page)
+		var repos []repositoryResponse
+		if err := j.getJSON(ctx, path, &repos); err != nil {
+			return nil, err
+		}
+
+		for _, r := range repos {
+			// Archived repositories are read-only and can't run workflows
+			if !r.Archived {
+				result = append(result, r)
+			}
+		}
+
+		if len(repos) < perPage {
+			break
+		}
+	}
+
+	return result, nil
+}
+
+// fetchWorkflowRuns fetches workflow runs with a specific status, following pagination
+func (j *JobRepositoryImpl) fetchWorkflowRuns(ctx context.Context, owner, repo, status string) ([]workflowRun, error) {
+	var allRuns []workflowRun
+
+	for page := 1; ; page++ {
+		path := fmt.Sprintf("repos/%s/%s/actions/runs?status=%s&per_page=%d&page=%d", owner, repo, status, perPage, page)
+		var runs workflowRunsResponse
+		if err := j.getJSON(ctx, path, &runs); err != nil {
 			return nil, fmt.Errorf("failed to request workflow runs: %w", err)
 		}
 
-		var runs workflowRunsResponse
-		if err := json.NewDecoder(response.Body).Decode(&runs); err != nil {
-			_ = response.Body.Close()
-			return nil, fmt.Errorf("failed to decode workflow runs response: %w", err)
-		}
-		_ = response.Body.Close()
-
-		allRuns.TotalCount = runs.TotalCount
-		allRuns.WorkflowRuns = append(allRuns.WorkflowRuns, runs.WorkflowRuns...)
+		allRuns = append(allRuns, runs.WorkflowRuns...)
 
 		// If we got fewer items than per_page, we've reached the last page
 		if len(runs.WorkflowRuns) < perPage {
 			break
 		}
-
-		page++
 	}
 
 	return allRuns, nil
 }
 
-// requestGetJobs fetches jobs from GitHub API
-func (j *JobRepositoryImpl) requestGetJobs(path string) (*jobsResponse, error) {
-	response, err := j.restClient.Request(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to request jobs: %w", err)
-	}
-	defer func() {
-		_ = response.Body.Close()
-	}()
-
+// getJobsForRun fetches and converts active jobs for a specific workflow run
+func (j *JobRepositoryImpl) getJobsForRun(ctx context.Context, repo repoRef, run workflowRun) ([]*entity.Job, error) {
+	path := fmt.Sprintf("repos/%s/%s/actions/runs/%d/jobs", repo.owner, repo.name, run.ID)
 	var jobs jobsResponse
-	if err := json.NewDecoder(response.Body).Decode(&jobs); err != nil {
-		return nil, fmt.Errorf("failed to decode jobs response: %w", err)
-	}
-
-	return &jobs, nil
-}
-
-// getJobsForRun fetches and converts jobs for a specific workflow run
-func (j *JobRepositoryImpl) getJobsForRun(run workflowRun, org, owner, repo string) ([]*entity.Job, error) {
-	runOwner, runRepo, err := j.extractOwnerAndRepo(org, owner, repo, run.Repository.FullName)
-	if err != nil {
-		return nil, err
-	}
-
-	path := fmt.Sprintf("repos/%s/%s/actions/runs/%d/jobs", runOwner, runRepo, run.ID)
-	jobs, err := j.requestGetJobs(path)
-	if err != nil {
-		return nil, err
+	if err := j.getJSON(ctx, path, &jobs); err != nil {
+		return nil, fmt.Errorf("failed to request jobs: %w", err)
 	}
 
 	var result []*entity.Job
@@ -171,17 +217,20 @@ func (j *JobRepositoryImpl) getJobsForRun(run workflowRun, org, owner, repo stri
 	return result, nil
 }
 
-// extractOwnerAndRepo extracts owner and repo from either org context or direct parameters
-func (j *JobRepositoryImpl) extractOwnerAndRepo(org, owner, repo, fullName string) (string, string, error) {
-	if org != "" {
-		// Parse repository full name (format: "owner/repo")
-		parts := strings.Split(fullName, "/")
-		if len(parts) != 2 {
-			return "", "", fmt.Errorf("invalid repository full name format: %s", fullName)
-		}
-		return parts[0], parts[1], nil
+// getJSON sends a GET request and decodes the JSON response into v
+func (j *JobRepositoryImpl) getJSON(ctx context.Context, path string, v any) error {
+	response, err := j.restClient.RequestWithContext(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return err
 	}
-	return owner, repo, nil
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	if err := json.NewDecoder(response.Body).Decode(v); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+	return nil
 }
 
 // isActiveJob checks if a job status is considered active (in_progress or queued)

@@ -60,3 +60,14 @@ type jobResponse struct {
 	RunnerName  *string    `json:"runner_name"`
 	HtmlUrl     string     `json:"html_url"`
 }
+
+type repositoryResponse struct {
+	Name     string     `json:"name"`
+	FullName string     `json:"full_name"`
+	Archived bool       `json:"archived"`
+	Owner    ownerLogin `json:"owner"`
+}
+
+type ownerLogin struct {
+	Login string `json:"login"`
+}
