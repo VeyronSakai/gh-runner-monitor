@@ -18,6 +18,7 @@ import (
 var (
 	org       string
 	repo      string
+	orgRepos  []string
 	interval  int
 	debugPath string
 )
@@ -41,12 +42,24 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringVar(&org, "org", "", "Monitor runners for an organization")
+	rootCmd.Flags().StringSliceVar(&orgRepos, "repos", nil, "With --org, only look up jobs in these repositories (comma-separated names, e.g. repo1,repo2)")
 	rootCmd.Flags().StringVar(&repo, "repo", "", "Monitor runners for a specific repository (owner/repo)")
 	rootCmd.Flags().IntVar(&interval, "interval", 5, "Update interval in seconds")
 	rootCmd.Flags().StringVar(&debugPath, "debug", "", "Debug mode: path to JSON file with mock runner data")
 }
 
 func runMonitor(_ *cobra.Command, _ []string) error {
+	if len(orgRepos) > 0 {
+		if org == "" {
+			return fmt.Errorf("--repos can only be used together with --org")
+		}
+		for _, name := range orgRepos {
+			if name == "" || strings.Contains(name, "/") {
+				return fmt.Errorf("invalid repository name in --repos: %q (use names without the owner, e.g. repo1,repo2)", name)
+			}
+		}
+	}
+
 	var runnerRepo repository.RunnerRepository
 	var jobRepo repository.JobRepository
 	var timeProvider repository.TimeProvider
@@ -68,7 +81,7 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create GitHub client: %w", err)
 		}
-		jobRepo, err = github.NewJobRepository()
+		jobRepo, err = github.NewJobRepository(orgRepos)
 		if err != nil {
 			return fmt.Errorf("failed to create GitHub job client: %w", err)
 		}

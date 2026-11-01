@@ -12,9 +12,12 @@ type StubJobRepository struct {
 	Jobs []*entity.Job
 	// GetActiveJobsError is the error that will be returned by GetActiveJobs
 	GetActiveJobsError error
+	// CallCount is the number of times FetchActiveJobs has been called
+	CallCount int
 }
 
 func (s *StubJobRepository) FetchActiveJobs(_ context.Context, _, _, _ string) ([]*entity.Job, error) {
+	s.CallCount++
 	if s.GetActiveJobsError != nil {
 		return nil, s.GetActiveJobsError
 	}
