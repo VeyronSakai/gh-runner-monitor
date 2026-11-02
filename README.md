@@ -35,13 +35,6 @@ gh runner-monitor --repo owner/repo
 gh runner-monitor --org organization-name
 ```
 
-### Monitor organization, limiting job lookups to specific repositories
-```bash
-gh runner-monitor --org organization-name --repos repo1,repo2
-```
-
-GitHub's REST API has no organization-wide endpoint for workflow runs, so in `--org` mode the jobs running on each runner are found by querying every repository in the organization. For organizations with many repositories, use `--repos` to reduce API calls (all organization runners are still shown).
-
 ### Custom update interval
 ```bash
 gh runner-monitor --interval 10  # Update every 10 seconds

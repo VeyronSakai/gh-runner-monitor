@@ -26,9 +26,6 @@ const orgRepoListTTL = 5 * time.Minute
 // JobRepositoryImpl implements the JobRepository interface using GitHub API
 type JobRepositoryImpl struct {
 	restClient *api.RESTClient
-	// orgRepoNames limits which repositories are scanned in organization mode.
-	// When empty, all non-archived repositories in the organization are scanned.
-	orgRepoNames []string
 
 	cacheMu       sync.Mutex
 	cachedOrg     string
@@ -36,17 +33,15 @@ type JobRepositoryImpl struct {
 	cachedReposAt time.Time
 }
 
-// NewJobRepository creates a new instance of JobRepositoryImpl.
-// orgRepoNames limits the repositories scanned in organization mode (empty means all).
-func NewJobRepository(orgRepoNames []string) (domainrepo.JobRepository, error) {
+// NewJobRepository creates a new instance of JobRepositoryImpl
+func NewJobRepository() (domainrepo.JobRepository, error) {
 	restClient, err := api.DefaultRESTClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create REST client: %w\nPlease run 'gh auth login' to authenticate with GitHub", err)
 	}
 
 	return &JobRepositoryImpl{
-		restClient:   restClient,
-		orgRepoNames: orgRepoNames,
+		restClient: restClient,
 	}, nil
 }
 
@@ -88,15 +83,6 @@ func (j *JobRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, or
 func (j *JobRepositoryImpl) resolveTargets(ctx context.Context, owner, repo, org string) (targets []repoRef, skipErrors bool, err error) {
 	if org == "" {
 		return []repoRef{{owner: owner, name: repo}}, false, nil
-	}
-
-	// Explicitly selected repositories: report errors so typos are noticed
-	if len(j.orgRepoNames) > 0 {
-		targets = make([]repoRef, 0, len(j.orgRepoNames))
-		for _, name := range j.orgRepoNames {
-			targets = append(targets, repoRef{owner: org, name: name})
-		}
-		return targets, false, nil
 	}
 
 	// GitHub has no org-level endpoint for workflow runs, so each repository is queried individually.
