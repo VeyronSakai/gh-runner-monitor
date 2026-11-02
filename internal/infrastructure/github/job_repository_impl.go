@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/VeyronSakai/gh-runner-monitor/internal/domain/entity"
 	domainrepo "github.com/VeyronSakai/gh-runner-monitor/internal/domain/repository"
@@ -19,18 +18,9 @@ const maxConcurrentRequests = 10
 // perPage is the page size used for paginated GitHub API requests
 const perPage = 100
 
-// orgRepoListTTL is how long the organization's repository list is cached.
-// The list rarely changes, so there is no need to fetch it on every refresh.
-const orgRepoListTTL = 5 * time.Minute
-
 // JobRepositoryImpl implements the JobRepository interface using GitHub API
 type JobRepositoryImpl struct {
 	restClient *api.RESTClient
-
-	cacheMu       sync.Mutex
-	cachedOrg     string
-	cachedRepos   []repoRef
-	cachedReposAt time.Time
 }
 
 // NewJobRepository creates a new instance of JobRepositoryImpl
@@ -47,12 +37,20 @@ func NewJobRepository() (domainrepo.JobRepository, error) {
 
 // FetchActiveJobs retrieves all active jobs for a repository or organization
 func (j *JobRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, org string) ([]*entity.Job, error) {
-	targets, skipErrors, err := j.resolveTargets(ctx, owner, repo, org)
-	if err != nil {
-		return nil, err
+	targets := []repoRef{{owner: owner, name: repo}}
+	if org != "" {
+		// GitHub has no org-level endpoint for workflow runs, so each repository is queried individually.
+		repos, err := j.fetchOrgRepositories(ctx, org)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch repositories for organization %s: %w", org, err)
+		}
+		targets = make([]repoRef, 0, len(repos))
+		for _, r := range repos {
+			targets = append(targets, repoRef{owner: r.Owner.Login, name: r.Name})
+		}
 	}
 
-	runs, err := j.fetchActiveRuns(ctx, targets, skipErrors)
+	runs, err := j.fetchActiveRuns(ctx, targets, org != "")
 	if err != nil {
 		return nil, err
 	}
@@ -76,46 +74,6 @@ func (j *JobRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, or
 		allJobs = append(allJobs, jobs...)
 	}
 	return allJobs, nil
-}
-
-// resolveTargets decides which repositories to scan for workflow runs.
-// skipErrors is true when scanning a whole organization, where some repositories may be unreadable.
-func (j *JobRepositoryImpl) resolveTargets(ctx context.Context, owner, repo, org string) (targets []repoRef, skipErrors bool, err error) {
-	if org == "" {
-		return []repoRef{{owner: owner, name: repo}}, false, nil
-	}
-
-	// GitHub has no org-level endpoint for workflow runs, so each repository is queried individually.
-	targets, err = j.orgRepositories(ctx, org)
-	if err != nil {
-		return nil, false, fmt.Errorf("failed to fetch repositories for organization %s: %w", org, err)
-	}
-	return targets, true, nil
-}
-
-// orgRepositories returns the organization's repositories, using a cached list while it is fresh
-func (j *JobRepositoryImpl) orgRepositories(ctx context.Context, org string) ([]repoRef, error) {
-	j.cacheMu.Lock()
-	defer j.cacheMu.Unlock()
-
-	if j.cachedOrg == org && time.Since(j.cachedReposAt) < orgRepoListTTL {
-		return j.cachedRepos, nil
-	}
-
-	repos, err := j.fetchOrgRepositories(ctx, org)
-	if err != nil {
-		return nil, err
-	}
-
-	refs := make([]repoRef, 0, len(repos))
-	for _, r := range repos {
-		refs = append(refs, repoRef{owner: r.Owner.Login, name: r.Name})
-	}
-
-	j.cachedOrg = org
-	j.cachedRepos = refs
-	j.cachedReposAt = time.Now()
-	return refs, nil
 }
 
 // repoRef identifies a repository
