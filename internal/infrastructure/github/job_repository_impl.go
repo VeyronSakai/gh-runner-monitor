@@ -50,7 +50,7 @@ func (j *JobRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, or
 		}
 	}
 
-	runs, err := j.fetchActiveRuns(ctx, targets, org != "")
+	runs, err := j.fetchActiveRuns(ctx, targets)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +91,8 @@ type runRef struct {
 // activeRunStatuses are the workflow run statuses that can have active jobs
 var activeRunStatuses = []string{"in_progress", "queued"}
 
-// fetchActiveRuns fetches in_progress and queued runs for the given repositories in parallel.
-// When skipErrors is true, repositories that fail (e.g. Actions disabled or no permission) are ignored.
-func (j *JobRepositoryImpl) fetchActiveRuns(ctx context.Context, targets []repoRef, skipErrors bool) ([]runRef, error) {
+// fetchActiveRuns fetches in_progress and queued runs for the given repositories in parallel
+func (j *JobRepositoryImpl) fetchActiveRuns(ctx context.Context, targets []repoRef) ([]runRef, error) {
 	n := len(targets) * len(activeRunStatuses)
 	runsPerReq := make([][]workflowRun, n)
 	errs := make([]error, n)
@@ -112,9 +111,6 @@ func (j *JobRepositoryImpl) fetchActiveRuns(ctx context.Context, targets []repoR
 	var result []runRef
 	for i, runs := range runsPerReq {
 		if errs[i] != nil {
-			if skipErrors {
-				continue
-			}
 			return nil, errs[i]
 		}
 		for _, run := range runs {
