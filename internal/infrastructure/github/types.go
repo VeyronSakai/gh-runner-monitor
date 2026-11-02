@@ -62,12 +62,6 @@ type jobResponse struct {
 }
 
 type repositoryResponse struct {
-	Name     string     `json:"name"`
-	FullName string     `json:"full_name"`
-	Archived bool       `json:"archived"`
-	Owner    ownerLogin `json:"owner"`
-}
-
-type ownerLogin struct {
-	Login string `json:"login"`
+	Name     string `json:"name"`
+	Archived bool   `json:"archived"`
 }

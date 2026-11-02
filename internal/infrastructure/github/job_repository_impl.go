@@ -46,7 +46,7 @@ func (j *JobRepositoryImpl) FetchActiveJobs(ctx context.Context, owner, repo, or
 		}
 		targets = make([]repoRef, 0, len(repos))
 		for _, r := range repos {
-			targets = append(targets, repoRef{owner: r.Owner.Login, name: r.Name})
+			targets = append(targets, repoRef{owner: org, name: r.Name})
 		}
 	}
 
