@@ -60,3 +60,8 @@ type jobResponse struct {
 	RunnerName  *string    `json:"runner_name"`
 	HtmlUrl     string     `json:"html_url"`
 }
+
+type repositoryResponse struct {
+	Name     string `json:"name"`
+	Archived bool   `json:"archived"`
+}

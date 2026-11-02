@@ -51,7 +51,7 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 				{
 					ID:     runnerID,
 					Name:   runnerName,
-					Status: entity.StatusIdle,
+					Status: entity.StatusActive,
 					Labels: []string{"self-hosted", "linux"},
 					OS:     "linux",
 				},
@@ -110,7 +110,7 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 				{
 					ID:     runnerID,
 					Name:   runnerName,
-					Status: entity.StatusIdle,
+					Status: entity.StatusActive,
 				},
 			},
 			getJobsErr: errors.New("failed to get jobs"),
@@ -158,19 +158,16 @@ func TestRunnerMonitor_Execute(t *testing.T) {
 }
 
 func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
-	runnerID := int64(1)
-	runnerName := "test-runner"
+	busyRunnerID := int64(1)
+	idleRunnerID := int64(2)
+	idleRunnerName := "idle-runner"
 	startedAt := time.Now()
 
 	runnerRepo := &test.StubRunnerRepository{
 		Runners: []*entity.Runner{
-			{
-				ID:     runnerID,
-				Name:   runnerName,
-				Status: entity.StatusIdle,
-				Labels: []string{"self-hosted"},
-				OS:     "linux",
-			},
+			{ID: busyRunnerID, Name: "busy-runner", Status: entity.StatusActive},
+			// Reported as idle by the API, but a job has just been assigned to it
+			{ID: idleRunnerID, Name: idleRunnerName, Status: entity.StatusIdle},
 		},
 	}
 	jobRepo := &test.StubJobRepository{
@@ -180,8 +177,8 @@ func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
 				RunID:      100,
 				Name:       "job-1",
 				Status:     "in_progress",
-				RunnerID:   &runnerID,
-				RunnerName: &runnerName,
+				RunnerID:   &idleRunnerID,
+				RunnerName: &idleRunnerName,
 				StartedAt:  &startedAt,
 			},
 		},
@@ -197,7 +194,33 @@ func TestRunnerMonitor_Execute_UpdatesRunnerStatus(t *testing.T) {
 	}
 
 	// Runner should be marked as Active because it has an active job
-	if data.Runners[0].Status != entity.StatusActive {
-		t.Errorf("Expected runner status Active, got %s", data.Runners[0].Status)
+	if data.Runners[1].Status != entity.StatusActive {
+		t.Errorf("Expected runner status Active, got %s", data.Runners[1].Status)
+	}
+}
+
+func TestRunnerMonitor_Execute_SkipsJobFetchWhenNoRunnerIsBusy(t *testing.T) {
+	runnerRepo := &test.StubRunnerRepository{
+		Runners: []*entity.Runner{
+			{ID: 1, Name: "idle-runner", Status: entity.StatusIdle},
+			{ID: 2, Name: "offline-runner", Status: entity.StatusOffline},
+		},
+	}
+	jobRepo := &test.StubJobRepository{
+		GetActiveJobsError: errors.New("should not be called"),
+	}
+	timeProvider := &test.StubTimeProvider{}
+
+	useCase := NewRunnerMonitor(runnerRepo, jobRepo, timeProvider)
+
+	data, err := useCase.Execute(context.Background(), "", "", "org")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if jobRepo.CallCount != 0 {
+		t.Errorf("Expected FetchActiveJobs not to be called, got %d calls", jobRepo.CallCount)
+	}
+	if len(data.Jobs) != 0 {
+		t.Errorf("Expected 0 jobs, got %d", len(data.Jobs))
 	}
 }
